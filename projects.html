@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Projects · Jai Surya S K</title>
+  <meta name="description" content="Projects by Jai Surya S K.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="main">
+    <header class="topbar">
+      <div class="in">
+        <a class="mono-logo" href="index.html" aria-label="Jai Surya S K, home">JS</a>
+        <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+        <nav aria-label="Main">
+          <ul class="nav" id="site-nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="experience.html">Experience</a></li>
+          <li><a href="projects.html" aria-current="page">Projects</a></li>
+          <li><a href="protosem.html">ProtoSem</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main class="page">
+      <div class="page-top"><div class="eyebrow">Projects</div><h1 class="page-title">Featured <em>Projects</em></h1>
+      <p class="page-lede">Six builds across drones, rockets, robots and the web.</p></div>
+      <div class="filters" role="group" aria-label="Filter projects">
+        <button type="button" data-filter="all" aria-pressed="true">All</button>
+        <button type="button" data-filter="hw" aria-pressed="false">Hardware</button>
+        <button type="button" data-filter="web" aria-pressed="false">Web</button>
+      </div>
+      <div class="proj-grid big"><article class="card" id="uav" data-kind="hw"><img src="images/uav.jpg" alt="UAV Deployable Water Quality Sensing and Sampling Device"><div class="body"><div class="kind">Drone payload</div><h3>UAV Deployable Water Quality Sensing &amp; Sampling Device</h3><p>A payload that mounts on a drone, measures water quality on site and collects samples from places that are hard to reach on foot.</p><table class="spec"><tbody><tr><th scope="row">Compute</th><td>Raspberry Pi + ESP32</td></tr><tr><th scope="row">Job</th><td>In-situ sensing and sampling</td></tr><tr><th scope="row">Platform</th><td>UAV</td></tr></tbody></table><ul class="chips"><li>Raspberry Pi</li><li>ESP32</li><li>IoT</li><li>Sensors</li><li>Drone integration</li></ul></div></article><article class="card" id="linefollower" data-kind="hw"><img src="images/linefollower.jpg" alt="Line Follower Robot"><div class="body"><div class="kind">Autonomous robot</div><h3>Line Follower Robot</h3><p>Autonomous robot that follows a line using IR sensors and a PID control loop.</p><ul class="chips"><li>Arduino</li><li>IR sensors</li><li>PID</li><li>Robotics</li></ul></div></article><article class="card" id="grammar" data-kind="web"><img src="images/grammar.jpg" alt="Grammar Genius"><div class="body"><div class="kind">Learning website</div><h3>Grammar Genius</h3><p>An interactive website for learning grammar through practice instead of rules on a page.</p><ul class="chips"><li>HTML</li><li>CSS</li><li>JavaScript</li></ul></div></article><article class="card" id="emailgame" data-kind="web"><img src="images/emailgame.jpg" alt="Email Rearranging Game"><div class="body"><div class="kind">Educational game</div><h3>Email Rearranging Game</h3><p>An educational game where players arrange the parts of an email in the right order to improve their email writing.</p><ul class="chips"><li>HTML</li><li>CSS</li><li>JavaScript</li></ul></div></article><article class="card" id="rccar" data-kind="hw"><img src="images/rccar.jpg" alt="RC Electric Car"><div class="body"><div class="kind">Competition vehicle</div><h3>RC Electric Car</h3><p>High-speed RC vehicle designed and assembled for robotics competitions.</p><ul class="chips"><li>BLDC</li><li>ESC</li><li>Embedded Systems</li></ul></div></article><article class="card" id="rocket" data-kind="hw"><img src="images/rocket.jpg" alt="Sounding Rocket Telemetry and Avionics"><div class="body"><div class="kind">Avionics</div><h3>Sounding Rocket Telemetry &amp; Avionics</h3><p>Rocket telemetry and flight-data logging system. Logs altitude and motion, and sends position to the ground over long-range radio.</p><table class="spec"><tbody><tr><th scope="row">Radio link</th><td>LoRa</td></tr><tr><th scope="row">Altitude</th><td>BMP280</td></tr><tr><th scope="row">Motion</th><td>MPU6050</td></tr><tr><th scope="row">Position</th><td>GPS</td></tr></tbody></table><ul class="chips"><li>LoRa</li><li>GPS</li><li>BMP280</li><li>MPU6050</li><li>Telemetry</li></ul></div></article></div>
+    </main>
+    <footer class="foot">
+      <span>&copy; <span data-year>2026</span> Jai Surya S K · ECE, Kumaraguru College of Technology</span>
+      <span>Coimbatore, Tamil Nadu</span>
+    </footer>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

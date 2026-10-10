@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>IoT Task 3 · Jai Surya S K</title>
+  <meta name="description" content="IoT session Task 3: voice control of the bulb with Google Assistant and IFTTT.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="main">
+    <header class="topbar">
+      <div class="in">
+        <a class="mono-logo" href="index.html" aria-label="Jai Surya S K, home">JS</a>
+        <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+        <nav aria-label="Main">
+          <ul class="nav" id="site-nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="experience.html">Experience</a></li>
+          <li><a href="projects.html">Projects</a></li>
+          <li><a href="protosem.html" aria-current="page">ProtoSem</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main class="page">
+      <div class="crumb"><a href="protosem.html#iot">ProtoSem</a> <span>/</span> <a href="protosem.html#iot">IoT</a> <span>/</span> Task 3</div>
+      <div class="page-top"><div class="eyebrow">IoT session &middot; Task 03</div><h1 class="page-title">Add <em>voice control</em> to the bulb</h1>
+      <p class="page-lede">Saying &ldquo;Okay Google, activate Bulb ON&rdquo; triggers an IFTTT applet, which writes ON to an Adafruit IO feed. The ESP32 from Task 2 receives it over MQTT and switches the relay.</p></div>
+
+      <div class="facts-row">
+        <div><span>Voice</span><b>Google Assistant</b></div>
+        <div><span>Automation</span><b>IFTTT, 2 applets</b></div>
+        <div><span>Cloud</span><b>Adafruit IO feed</b></div>
+        <div><span>Controller</span><b>ESP32 + relay</b></div>
+      </div>
+
+      <nav class="toc" aria-label="On this page"><a href="#overview">Overview</a><a href="#video">Video</a><a href="#arch">Architecture</a><a href="#ifttt">IFTTT setup</a><a href="#esp">ESP32 side</a><a href="#test">Testing</a><a href="#results">Results</a><a href="#trouble">Notes</a><a href="#security">Security</a><a href="#deep">In depth</a><a href="#conclusion">Conclusion</a></nav>
+
+      <section class="doc" id="overview">
+        <h2>Overview</h2>
+        <p class="prose">Task 2 controlled the bulb from a dashboard. Task 3 replaces the dashboard with a voice command. The ESP32 firmware stays almost the same, because it already listens to the <code>Bulb</code> feed. The new work is the chain in front of it: Google Assistant recognises the phrase, IFTTT turns it into an action, and that action sends <code>ON</code> or <code>OFF</code> to the feed.</p>
+        <div class="flow task-flow"><span>Voice</span> <i>&rarr;</i> <span>Google Assistant</span> <i>&rarr;</i> <span>IFTTT</span> <i>&rarr;</i> <span>Adafruit IO feed</span> <i>&rarr;</i> <span>MQTT</span> <i>&rarr;</i> <span>ESP32</span> <i>&rarr;</i> <span>Relay</span> <i>&rarr;</i> <span>Bulb</span></div>
+        <h3 class="sub">Objectives</h3>
+        <ul class="tick"><li>Control a bulb with a natural spoken command.</li><li>Use Google Assistant as the voice interface.</li><li>Use IFTTT to turn the voice event into an action.</li><li>Use an Adafruit IO feed as the MQTT messaging layer.</li><li>Receive the command on an ESP32 and drive a relay.</li><li>Verify the whole chain from speech to the physical bulb.</li></ul>
+      </section>
+
+      <section class="doc" id="video"><h2>Working video</h2>
+<p class="prose">This recording shows the whole path working: a spoken command, the Serial Monitor reacting and the bulb switching.</p>
+<div class="video-wrap"><iframe src="https://drive.google.com/file/d/15AJGbAR9X35IYntLEv_hpfQnbbMLku5F/preview" title="Voice controlled bulb demonstration" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe></div>
+<p class="src">If the player does not load, <a href="https://drive.google.com/file/d/15AJGbAR9X35IYntLEv_hpfQnbbMLku5F/view?usp=sharing" target="_blank" rel="noopener">open the video on Google Drive</a>.</p></section>
+
+      <section class="doc" id="arch">
+        <h2>Architecture</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Layer</th><th>Technology</th><th>Role</th></tr></thead><tbody><tr><td>Voice interface</td><td>Google Assistant</td><td>Recognises the spoken phrase</td></tr><tr><td>Automation</td><td>IFTTT</td><td>Runs a separate ON or OFF applet for each phrase</td></tr><tr><td>Cloud messaging</td><td>Adafruit IO + MQTT</td><td>Holds the Bulb feed and delivers each value to the ESP32</td></tr><tr><td>Controller</td><td>ESP32</td><td>Subscribes to the feed, reads ON or OFF, sets the relay</td></tr><tr><td>Actuator</td><td>Relay + bulb</td><td>Switches the physical load</td></tr></tbody></table></div>
+        <p class="prose small">Hardware: ESP32 board, relay module, a bulb with holder, a Wi-Fi network, a computer with the Arduino IDE and a phone with Google Assistant.</p>
+      </section>
+
+      <section class="doc" id="ifttt">
+        <h2>IFTTT setup</h2>
+        <p class="prose">Two applets were built, one for ON and one for OFF. Each uses Google Assistant as the trigger (&ldquo;If This&rdquo;) and Adafruit IO as the action (&ldquo;Then That&rdquo;).</p>
+        <h3 class="sub">1. The trigger: Google Assistant</h3>
+        <ol class="steps"><li>In IFTTT choose <b>Create</b>, then <b>If This</b>.</li><li>Search for and pick <b>Google Assistant</b>.</li><li>Connect the Google account when asked. IFTTT then offers the <b>Activate scene</b> trigger.</li><li>Enter the scene name <b>Bulb ON</b> (or <b>Bulb OFF</b> for the second applet). The spoken phrase becomes &ldquo;Okay Google, activate Bulb ON&rdquo;.</li><li>Select <b>Create trigger</b>.</li></ol>
+        <div class="figs two"><figure class="shot fig"><a href="images/iot/task3/ifttt-if-this.png" target="_blank" rel="noopener"><img src="images/iot/task3/ifttt-if-this.png" alt="IFTTT Create screen with If This and Then That" loading="lazy"></a><figcaption><b>Figure 1.</b> Starting a new applet. The &ldquo;If This&rdquo; part is empty.</figcaption></figure><figure class="shot fig"><a href="images/iot/task3/ga-trigger.png" target="_blank" rel="noopener"><img src="images/iot/task3/ga-trigger.png" alt="IFTTT Google Assistant trigger list showing Activate scene" loading="lazy"></a><figcaption><b>Figure 2.</b> Google Assistant offers the Activate scene trigger.</figcaption></figure></div>
+        <div class="figs two"><figure class="shot fig"><a href="images/iot/task3/scene-on.png" target="_blank" rel="noopener"><img src="images/iot/task3/scene-on.png" alt="IFTTT Activate scene form with scene name Bulb ON" loading="lazy"></a><figcaption><b>Figure 3.</b> Scene name set to Bulb ON.</figcaption></figure><figure class="shot fig"><a href="images/iot/task3/scene-off.png" target="_blank" rel="noopener"><img src="images/iot/task3/scene-off.png" alt="IFTTT Activate scene form with scene name Bulb OFF" loading="lazy"></a><figcaption><b>Figure 4.</b> Scene name set to Bulb OFF for the second applet.</figcaption></figure></div>
+        <h3 class="sub">2. The action: send data to Adafruit IO</h3>
+        <ol class="steps"><li>Under <b>Then That</b> choose <b>Adafruit</b>, then <b>Send data to Adafruit IO</b>.</li><li>Authorise IFTTT to read and write the Adafruit IO feed data.</li><li>Pick the Adafruit account and the feed <b>Bulb</b>.</li><li>In <b>Data to save</b> type <b>ON</b> for the ON applet and <b>OFF</b> for the OFF applet.</li><li>Select <b>Create action</b>.</li></ol>
+        <div class="figs two"><figure class="shot fig"><a href="images/iot/task3/data-on.png" target="_blank" rel="noopener"><img src="images/iot/task3/data-on.png" alt="IFTTT Send data to Adafruit IO form with feed Bulb and data ON" loading="lazy"></a><figcaption><b>Figure 5.</b> Action for the ON applet: feed Bulb, data ON.</figcaption></figure><figure class="shot fig"><a href="images/iot/task3/data-off.png" target="_blank" rel="noopener"><img src="images/iot/task3/data-off.png" alt="IFTTT Send data to Adafruit IO form with feed Bulb and data OFF" loading="lazy"></a><figcaption><b>Figure 6.</b> Action for the OFF applet: feed Bulb, data OFF.</figcaption></figure></div>
+        <h3 class="sub">3. Review and finish</h3>
+        <p class="prose">Each applet gets a title that doubles as a summary of what it does. After finishing, both show as <b>Connected</b>.</p>
+        <div class="figs two"><figure class="shot fig"><a href="images/iot/task3/review-on.png" target="_blank" rel="noopener"><img src="images/iot/task3/review-on.png" alt="IFTTT review and finish screen for the Bulb ON applet" loading="lazy"></a><figcaption><b>Figure 7.</b> Review step for the ON applet.</figcaption></figure><figure class="shot fig"><a href="images/iot/task3/review-off.png" target="_blank" rel="noopener"><img src="images/iot/task3/review-off.png" alt="IFTTT review and finish screen for the Bulb OFF applet" loading="lazy"></a><figcaption><b>Figure 8.</b> Review step for the OFF applet.</figcaption></figure></div>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task3/applet-on.png" target="_blank" rel="noopener"><img src="images/iot/task3/applet-on.png" alt="IFTTT applet page for Bulb ON showing Connected" loading="lazy"></a><figcaption><b>Figure 9.</b> The ON applet, shown as Connected.</figcaption></figure><figure class="shot fig"><a href="images/iot/task3/applet-off.png" target="_blank" rel="noopener"><img src="images/iot/task3/applet-off.png" alt="IFTTT applet page for Bulb OFF showing Connected" loading="lazy"></a><figcaption><b>Figure 10.</b> The OFF applet, shown as Connected.</figcaption></figure></div>
+        <div class="table-wrap narrow"><table class="cmp small"><thead><tr><th>Applet</th><th>Phrase</th><th>Sends to Bulb feed</th></tr></thead><tbody><tr><td>Bulb ON</td><td>&ldquo;Okay Google, activate Bulb ON&rdquo;</td><td>ON</td></tr><tr><td>Bulb OFF</td><td>&ldquo;Okay Google, activate Bulb OFF&rdquo;</td><td>OFF</td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc" id="esp">
+        <h2>ESP32 side</h2>
+        <p class="prose">The firmware is the Task 2 sketch. It joins Wi-Fi, connects to Adafruit IO over MQTT, subscribes to <code>kumaraguru_rac/feeds/Bulb</code> and reacts to each value. The IFTTT action writes to that same feed, so no firmware change was needed to add voice control.</p>
+        <div class="code-head"><span>subscription_handler.ino</span><button class="copy" type="button" data-copy="#code-sub">Copy code</button></div><pre class="code" id="code-sub"><code>while ((subscription = mqtt.readSubscription(1000))) {
+  if (subscription == &amp;bulbFeed) {
+    String command = (char *)bulbFeed.lastread;
+    Serial.print(&quot;Received MQTT Command: &quot;);
+    Serial.println(command);
+
+    // BULB ON
+    if (command == &quot;ON&quot;) {
+      digitalWrite(RELAY_PIN, LOW);
+      Serial.println(&quot;Relay: ON&quot;);
+      Serial.println(&quot;Bulb: ON&quot;);
+    }
+    // BULB OFF
+    else if (command == &quot;OFF&quot;) {
+      digitalWrite(RELAY_PIN, HIGH);
+      Serial.println(&quot;Relay: OFF&quot;);
+      Serial.println(&quot;Bulb: OFF&quot;);
+    }
+  }
+}</code></pre>
+        <p class="prose">The relay board is active-low: LOW switches it on and HIGH switches it off. See <a href="iot-task2.html">Task 2</a> for the full setup, libraries and wiring.</p>
+      </section>
+
+      <section class="doc" id="test">
+        <h2>Testing</h2>
+        <p class="prose">On start-up the Serial Monitor prints the account, feed and topic, then <code>MQTT Connected!</code>. After that, each spoken command appears as a received MQTT command followed by the relay and bulb state.</p>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task3/serial-start.png" target="_blank" rel="noopener"><img src="images/iot/task3/serial-start.png" alt="Arduino Serial Monitor showing the Adafruit IO username, feed Bulb, topic and MQTT Connected" loading="lazy"></a><figcaption><b>Figure 11.</b> Start-up output: account, feed, topic, and MQTT Connected.</figcaption></figure></div>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task3/serial-log.png" target="_blank" rel="noopener"><img src="images/iot/task3/serial-log.png" alt="Serial Monitor log showing received MQTT commands OFF, ON, OFF with matching relay and bulb states" loading="lazy"></a><figcaption><b>Figure 12.</b> Received commands with the relay and bulb state after each one.</figcaption></figure></div>
+        <p class="prose">The sequence in the log is OFF, ON, OFF, which matches the order the phrases were spoken.</p>
+        <h3 class="sub">Hardware during the demo</h3>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task3/hardware.png" target="_blank" rel="noopener"><img src="images/iot/task3/hardware.png" alt="Bulb in a holder next to an ESP32 board and relay module with a red LED lit" loading="lazy"></a><figcaption>The bulb and relay board on the bench. The relay LED is lit while the bulb is on. The laptop at the top is running the Serial Monitor.</figcaption></figure></div>
+      </section>
+
+      <section class="doc" id="results">
+        <h2>Test results</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Test</th><th>Evidence</th><th>Status</th></tr></thead><tbody><tr><td>MQTT connection</td><td>Serial Monitor shows <code>MQTT Connected!</code></td><td><span class="pass">PASS</span></td></tr><tr><td>ON command received</td><td><code>Received MQTT Command: ON</code></td><td><span class="pass">PASS</span></td></tr><tr><td>ON relay response</td><td><code>Relay: ON</code> and <code>Bulb: ON</code></td><td><span class="pass">PASS</span></td></tr><tr><td>OFF command received</td><td><code>Received MQTT Command: OFF</code></td><td><span class="pass">PASS</span></td></tr><tr><td>OFF relay response</td><td><code>Relay: OFF</code> and <code>Bulb: OFF</code></td><td><span class="pass">PASS</span></td></tr><tr><td>IFTTT ON applet</td><td>Shown as Connected in My Applets</td><td><span class="pass">PASS</span></td></tr><tr><td>IFTTT OFF applet</td><td>Shown as Connected in My Applets</td><td><span class="pass">PASS</span></td></tr><tr><td>Physical demonstration</td><td>Bulb and relay responding on the bench</td><td><span class="pass">PASS</span></td></tr></tbody></table></div>
+        <p class="src">The recorded demo is in the <a href="#video">working video</a> above.</p>
+      </section>
+
+      <section class="doc" id="trouble">
+        <h2>Notes from the build</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>What happened</th><th>Why</th><th>What to do</th></tr></thead><tbody><tr><td>The &ldquo;Make a web request&rdquo; action asks for an upgrade.</td><td>Webhook actions need IFTTT Pro on the free plan.</td><td>Use the Adafruit action instead. It works on the free plan.</td></tr><tr><td>Google Home says &ldquo;Account linked, but no devices found&rdquo;.</td><td>IFTTT scenes are voice triggers, not smart-home devices.</td><td>Nothing to fix. The commands still work.</td></tr><tr><td>The phrase must match the scene name.</td><td>The trigger is &ldquo;activate &lt;scene name&gt;&rdquo;.</td><td>Say exactly &ldquo;activate Bulb ON&rdquo; or &ldquo;activate Bulb OFF&rdquo;.</td></tr><tr><td>Bulb reacts a moment after speaking.</td><td>The command passes through several cloud services.</td><td>Expect a short delay before the relay clicks.</td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc" id="security">
+        <h2>Security</h2>
+        <ul class="tick warn"><li>The Adafruit IO key is a secret. Keep it out of reports, screenshots, repositories and slides.</li><li>Screenshots of the key page, including its QR code, expose the key. Regenerate the key if that happened.</li><li>Use placeholders such as <code>WIFI_PASSWORD</code> and <code>AIO_KEY</code> in any shared code.</li><li>The bulb runs on mains voltage. Keep it isolated behind a rated relay.</li></ul>
+      </section>
+
+      <section class="doc deep" id="deep"><h2>In depth: how it really works</h2><p class="prose">Task 3 adds almost no new code, so the interesting part is the chain of services. This section explains what each hop does, why the design needs two applets, what the log shows and where the delay comes from.</p>
+<h3 class="sub">From a spoken phrase to a lit bulb</h3><ol class="trace"><li><b>The phone listens.</b> You say &ldquo;Okay Google, activate Bulb ON&rdquo;. Google Assistant converts speech to text on Google&rsquo;s servers.</li><li><b>The phrase is matched to a scene.</b> IFTTT&rsquo;s Google Assistant service has a trigger called <b>Activate scene</b>. Whatever name you give it becomes the phrase after the word &ldquo;activate&rdquo;. Here the names are <b>Bulb ON</b> and <b>Bulb OFF</b>.</li><li><b>IFTTT starts the applet.</b> Google tells IFTTT the scene was activated. IFTTT finds the applet that owns that trigger and runs its action.</li><li><b>The action calls Adafruit IO.</b> <b>Send data to Adafruit IO</b> writes a value, <code>ON</code> or <code>OFF</code>, to the <code>Bulb</code> feed on the account that was authorised earlier. The sender here is IFTTT calling Adafruit&rsquo;s service, not an MQTT client.</li><li><b>Adafruit IO republishes it.</b> Anything written to a feed is also published on that feed&rsquo;s MQTT topic, so the ESP32&rsquo;s existing subscription receives it.</li><li><b>The ESP32 and relay act.</b> The same handler from Task 2 reads the command and sets GPIO 26. The Serial Monitor prints the command and the relay and bulb state.</li></ol><h3 class="sub">Design choices</h3>
+<p class="prose"><b>Why two applets.</b> An Activate scene trigger carries only a name. It has no ON or OFF argument, so one applet cannot decide between two values. One applet per state keeps each phrase tied to exactly one value, which is easy to reason about and easy to test.</p>
+<p class="prose"><b>Why the firmware did not change.</b> The ESP32 knows two things: a topic and the words ON and OFF. It does not know who sent them. A dashboard, a voice command or a script can all control it. Keeping the device and the controllers separate in this way is called decoupling, and it is the main benefit of publish and subscribe.</p>
+<p class="prose"><b>Why Adafruit IO, not a web request.</b> IFTTT can also send a generic web request, but that action asked for a paid plan on this account. The Adafruit action does the same job through the free plan.</p>
+<p class="prose"><b>Authorisation.</b> When connecting the Adafruit service, Adafruit shows a consent page listing what IFTTT may do: read your name and username and read and write your feed data. Granting it lets IFTTT write to the feed without ever seeing your password.</p>
+<h3 class="sub">Reading the Serial Monitor log</h3><div class="table-wrap"><table class="cmp"><thead><tr><th>Log line</th><th>What it proves</th></tr></thead><tbody><tr><td><code>MQTT Connected!</code></td><td>The broker accepted the username and key. This line must appear before any voice test, otherwise the problem is on the ESP32 side.</td></tr><tr><td><code>Received MQTT Command: OFF</code></td><td>A message arrived on the Bulb topic with the text OFF, so the OFF applet fired and its data reached the feed.</td></tr><tr><td><code>Relay: OFF / Bulb: OFF</code></td><td>The handler ran and set GPIO 26 HIGH, which opens the relay contacts.</td></tr><tr><td><code>Received MQTT Command: ON</code></td><td>The ON applet fired. The log order OFF, ON, OFF matches the order the phrases were spoken.</td></tr><tr><td><code>Relay: ON / Bulb: ON</code></td><td>GPIO 26 went LOW, the relay closed and the bulb lit.</td></tr></tbody></table></div><h3 class="sub">Where the delay comes from</h3>
+<p class="prose">Five separate services sit between the voice and the bulb: speech recognition, IFTTT, Adafruit IO, the Wi-Fi link and the ESP32 loop. Each adds a small wait, and the total is usually a second or two but varies. Nothing in the chain gives the ESP32 priority, so a short delay before the relay clicks is normal rather than a fault.</p>
+<h3 class="sub">Limits and improvements</h3>
+<ul class="tick warn"><li><b>Open loop.</b> The ESP32 does not report its state back. If the relay fails, the cloud still thinks the command worked.</li><li><b>Third-party dependence.</b> If IFTTT or Google changes a feature, the voice path can stop working while the dashboard still works.</li><li><b>Fixed phrasing.</b> The phrase must match the scene name.</li></ul>
+<ul class="tick"><li>Publish the relay state to a second feed so the dashboard can show the real state.</li><li>Add a physical button as a local fallback.</li><li>Use a retained value so the ESP32 restores the last state after a reboot.</li></ul></section>
+
+      <section class="doc" id="conclusion">
+        <h2>Conclusion</h2>
+        <p class="prose">The full path from a spoken command to a switching bulb works: Google Assistant, IFTTT, an Adafruit IO feed, MQTT, the ESP32, the relay and the bulb. The Serial Monitor shows every command arriving and every relay change, and the bench photograph shows the bulb responding. Each hop adds some delay, which is the trade-off for being able to say a command from anywhere.</p>
+        <div class="pager"><a class="btn line" href="iot-task2.html">&larr; Task 2</a> <a class="btn line" href="protosem.html#iot">Back to IoT tasks</a> <a class="btn line" href="iot-task4.html">Next: Task 4 &rarr;</a></div>
+      </section>
+    </main>
+    <footer class="foot">
+      <span>&copy; <span data-year>2026</span> Jai Surya S K · ECE, Kumaraguru College of Technology</span>
+      <span>Coimbatore, Tamil Nadu</span>
+    </footer>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

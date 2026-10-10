@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>IoT Task 2 · Jai Surya S K</title>
+  <meta name="description" content="IoT session Task 2: controlling a bulb with MQTT and Adafruit IO.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="main">
+    <header class="topbar">
+      <div class="in">
+        <a class="mono-logo" href="index.html" aria-label="Jai Surya S K, home">JS</a>
+        <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+        <nav aria-label="Main">
+          <ul class="nav" id="site-nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="experience.html">Experience</a></li>
+          <li><a href="projects.html">Projects</a></li>
+          <li><a href="protosem.html" aria-current="page">ProtoSem</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main class="page">
+      <div class="crumb"><a href="protosem.html#iot">ProtoSem</a> <span>/</span> <a href="protosem.html#iot">IoT</a> <span>/</span> Task 2</div>
+      <div class="page-top"><div class="eyebrow">IoT session &middot; Task 02</div><h1 class="page-title">Control a bulb from anywhere with <em>MQTT</em></h1>
+      <p class="page-lede">A toggle on an Adafruit IO dashboard publishes ON or OFF. The ESP32 is subscribed over MQTT and switches a relay that drives a bulb.</p></div>
+
+      <div class="facts-row">
+        <div><span>Microcontroller</span><b>ESP32 Dev Module</b></div>
+        <div><span>Cloud</span><b>Adafruit IO</b></div>
+        <div><span>Protocol</span><b>MQTT, port 1883</b></div>
+        <div><span>Relay pin</span><b>GPIO 26</b></div>
+      </div>
+
+      <nav class="toc" aria-label="On this page"><a href="#overview">Overview</a><a href="#parts">Components</a><a href="#mqtt">MQTT basics</a><a href="#params">Parameters</a><a href="#adafruit">Adafruit IO setup</a><a href="#arduino">Arduino IDE</a><a href="#working">How it works</a><a href="#photos">Hardware photos</a><a href="#output">Output</a><a href="#verify">Verification</a><a href="#trouble">Troubleshooting</a><a href="#security">Security</a><a href="#deep">In depth</a><a href="#conclusion">Conclusion</a></nav>
+
+      <section class="doc" id="overview">
+        <h2>Overview</h2>
+        <p class="prose">This project switches a bulb or LED on and off from a web dashboard. The dashboard is hosted by Adafruit IO. The browser never talks to the ESP32&rsquo;s GPIO directly. Instead, the dashboard updates a feed called <code>Bulb</code>, Adafruit IO makes that value available over MQTT, and the ESP32 receives it because it is subscribed to the matching topic.</p>
+        <div class="flow task-flow"><span>Adafruit IO dashboard</span> <i>&rarr;</i> <span>Bulb feed</span> <i>&rarr;</i> <span>MQTT topic</span> <i>&rarr;</i> <span>ESP32 subscriber</span> <i>&rarr;</i> <span>GPIO 26</span> <i>&rarr;</i> <span>Relay</span> <i>&rarr;</i> <span>Bulb</span></div>
+        <h3 class="sub">Objectives</h3>
+        <ul class="tick"><li>Connect the ESP32 to Wi-Fi and get an IP address.</li><li>Log in to Adafruit IO with the account username and key.</li><li>Create the Bulb feed and an ON and OFF toggle on a dashboard.</li><li>Send ON and OFF commands with MQTT publish and subscribe.</li><li>Process the received command in the firmware.</li><li>Drive a relay from GPIO 26 to switch the bulb or LED.</li><li>Check every stage in the Serial Monitor and on the dashboard.</li></ul>
+      </section>
+
+      <section class="doc" id="parts">
+        <h2>Components and tools</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Item</th><th>Purpose</th><th>Detail</th></tr></thead><tbody><tr><td>ESP32 Dev Module</td><td>Main IoT controller</td><td>Wi-Fi and MQTT client</td></tr><tr><td>Relay module</td><td>Electrical switching stage</td><td>Controlled from GPIO 26</td></tr><tr><td>Bulb or LED load</td><td>Physical output</td><td>ON and OFF</td></tr><tr><td>Wi-Fi network</td><td>Internet connection</td><td>Needed by the ESP32</td></tr><tr><td>Arduino IDE</td><td>Firmware development and upload</td><td>ESP32 selected as the board</td></tr><tr><td>Adafruit MQTT Library</td><td>MQTT implementation</td><td>Version 2.6.6</td></tr><tr><td>Adafruit IO</td><td>Dashboard, feed and MQTT service</td><td>Account kumaraguru_rac</td></tr><tr><td>Browser or PC</td><td>User interface</td><td>Operates the dashboard toggle</td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc" id="mqtt">
+        <h2>MQTT basics</h2>
+        <p class="prose">MQTT (Message Queuing Telemetry Transport) is a light publish and subscribe protocol that is common in IoT. The sender and receiver never talk to each other. A broker receives each message and forwards it to every client subscribed to that topic.</p>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Term</th><th>Meaning</th><th>In this project</th></tr></thead><tbody><tr><td>Broker</td><td>Central server that receives and routes messages</td><td>Adafruit IO MQTT service</td></tr><tr><td>Client</td><td>Device or software connected to the broker</td><td>The ESP32</td></tr><tr><td>Publisher</td><td>Sends a message to a topic</td><td>The dashboard side, publishing the toggle value</td></tr><tr><td>Subscriber</td><td>Listens for messages on a topic</td><td>The ESP32, subscribed to the Bulb topic</td></tr><tr><td>Topic</td><td>The address a message is sent to</td><td>kumaraguru_rac/feeds/Bulb</td></tr><tr><td>Payload</td><td>The message content</td><td>ON or OFF</td></tr><tr><td>Feed</td><td>An Adafruit IO data channel</td><td>Bulb</td></tr></tbody></table></div>
+        <ul class="parts" style="margin-top:18px"><li><b>Topic</b><span><code>kumaraguru_rac/feeds/Bulb</code>. <code>kumaraguru_rac</code> is the Adafruit IO username, <code>feeds</code> marks a feed route and <code>Bulb</code> is the feed name.</span></li><li><b>Client</b><span>The ESP32 first joins Wi-Fi, then uses the Adafruit MQTT library to keep a session open with Adafruit IO and wait for new values.</span></li><li><b>Payload</b><span><code>ON</code> asks for the load to be on and <code>OFF</code> asks for it to be off. These exact strings appear in the Serial Monitor.</span></li></ul>
+      </section>
+
+      <section class="doc" id="params">
+        <h2>Project parameters</h2>
+        <p class="prose">The ESP32 builds an MQTT client from a network connection, the broker address and port, and the account login. It then subscribes to the Bulb feed.</p>
+        <div class="code-head"><span>client_and_subscription.ino</span><button class="copy" type="button" data-copy="#code-mqtt">Copy code</button></div><pre class="code" id="code-mqtt"><code>WiFiClient client;
+
+Adafruit_MQTT_Client mqtt(
+  &amp;client,
+  AIO_SERVER,
+  AIO_PORT,
+  AIO_USERNAME,
+  AIO_KEY
+);
+
+Adafruit_MQTT_Subscribe bulbFeed =
+  Adafruit_MQTT_Subscribe(
+    &amp;mqtt,
+    AIO_USERNAME &quot;/feeds/Bulb&quot;
+  );</code></pre>
+        <div class="table-wrap" style="margin-top:20px"><table class="cmp"><thead><tr><th>Parameter</th><th>Value</th><th>Meaning</th></tr></thead><tbody><tr><td>client</td><td>WiFiClient object</td><td>Network transport used by the MQTT client</td></tr><tr><td>AIO_SERVER</td><td>io.adafruit.com</td><td>Host name of the Adafruit IO MQTT service</td></tr><tr><td>AIO_PORT</td><td>1883</td><td>MQTT TCP port used in the code</td></tr><tr><td>AIO_USERNAME</td><td>kumaraguru_rac</td><td>Adafruit IO account name</td></tr><tr><td>AIO_KEY</td><td>Hidden</td><td>Secret key that authenticates the account</td></tr><tr><td>RELAY_PIN</td><td>26</td><td>ESP32 GPIO connected to the relay input</td></tr><tr><td>Subscription topic</td><td>kumaraguru_rac/feeds/Bulb</td><td>Route used to receive bulb commands</td></tr><tr><td>Payload</td><td>ON / OFF</td><td>State values the firmware handles</td></tr></tbody></table></div>
+        <p class="src"><b>Port and topic are different things.</b> <code>1883</code> tells the client which broker port to connect to. <code>kumaraguru_rac/feeds/Bulb</code> tells MQTT which message stream to use.</p>
+      </section>
+
+      <section class="doc" id="adafruit">
+        <h2>Adafruit IO setup</h2>
+        <ol class="steps"><li>Create or choose the Adafruit IO account.</li><li>Create a dashboard named <b>Bulb</b>.</li><li>Add a <b>Toggle</b> block to the dashboard.</li><li>Create the <b>Bulb</b> feed in the Default group and connect the toggle to it.</li><li>Set the button text and value to <b>ON</b> and <b>OFF</b>.</li><li>Create the block, then use the toggle to publish commands.</li></ol>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task2/create-dashboard.png" target="_blank" rel="noopener"><img src="images/iot/task2/create-dashboard.png" alt="Adafruit IO Create a new Dashboard dialog"></a><figcaption><b>Figure 1.</b> Creating the Bulb dashboard in Adafruit IO.</figcaption></figure></div>
+        <div class="figs two"><figure class="shot fig"><a href="images/iot/task2/block-types.png" target="_blank" rel="noopener"><img src="images/iot/task2/block-types.png" alt="Adafruit IO new block screen with the toggle block first in the list"></a><figcaption><b>Figure 2.</b> Choosing the Toggle block, which suits ON and OFF control.</figcaption></figure><figure class="shot fig"><a href="images/iot/task2/feed-selected.png" target="_blank" rel="noopener"><img src="images/iot/task2/feed-selected.png" alt="Connect a Feed dialog with the Bulb feed ticked"></a><figcaption><b>Figure 3.</b> The Bulb feed selected for the toggle.</figcaption></figure><figure class="shot fig"><a href="images/iot/task2/toggle-config.png" target="_blank" rel="noopener"><img src="images/iot/task2/toggle-config.png" alt="Toggle block settings with ON and OFF values"></a><figcaption><b>Figure 4.</b> Toggle settings with button text and published values set to ON and OFF.</figcaption></figure></div>
+      </section>
+
+      <section class="doc" id="arduino">
+        <h2>Arduino IDE setup</h2>
+        <p class="prose">With the ESP32 board package installed, the Adafruit MQTT Library (version 2.6.6) was added from the Library Manager. The sketch then compiled for the ESP32 Dev Module.</p>
+        <div class="figs two"><figure class="shot fig"><a href="images/iot/task2/library.png" target="_blank" rel="noopener"><img src="images/iot/task2/library.png" alt="Arduino IDE Library Manager showing Adafruit MQTT Library 2.6.6 installed"></a><figcaption><b>Figure 5.</b> Adafruit MQTT Library 2.6.6 installed in the Library Manager.</figcaption></figure><figure class="shot fig"><a href="images/iot/task2/compile.png" target="_blank" rel="noopener"><img src="images/iot/task2/compile.png" alt="Arduino IDE compiling the MQTT sketch"></a><figcaption><b>Figure 6.</b> Compiling the sketch for the ESP32 Dev Module.</figcaption></figure></div>
+        <h3 class="sub">Libraries and configuration</h3>
+        <p class="prose"><code>WiFi.h</code> gives the ESP32 Wi-Fi functions. <code>Adafruit_MQTT.h</code> provides the MQTT base classes and feed objects. <code>Adafruit_MQTT_Client.h</code> is the client used to connect and subscribe.</p>
+        <div class="code-head"><span>configuration.ino</span><button class="copy" type="button" data-copy="#code-config">Copy code</button></div><pre class="code" id="code-config"><code>#include &lt;WiFi.h&gt;
+#include &quot;Adafruit_MQTT.h&quot;
+#include &quot;Adafruit_MQTT_Client.h&quot;
+
+#define WIFI_SSID      &quot;YOUR_WIFI_NAME&quot;
+#define WIFI_PASSWORD  &quot;YOUR_WIFI_PASSWORD&quot;
+
+#define AIO_USERNAME   &quot;kumaraguru_rac&quot;
+#define AIO_KEY        &quot;YOUR_ADAFRUIT_IO_KEY&quot;
+#define AIO_SERVER     &quot;io.adafruit.com&quot;
+#define AIO_PORT       1883
+
+#define RELAY_PIN      26</code></pre>
+        <p class="prose small">The Wi-Fi name, password and Adafruit IO key are placeholders. Keep your real values out of anything you publish.</p>
+        <h3 class="sub">Relay logic</h3>
+        <div class="code-head"><span>relay_logic.ino</span><button class="copy" type="button" data-copy="#code-relay">Copy code</button></div><pre class="code" id="code-relay"><code>// BULB ON
+if (command == &quot;ON&quot;) {
+  digitalWrite(RELAY_PIN, LOW);
+  Serial.println(&quot;Relay: ON&quot;);
+  Serial.println(&quot;Bulb: ON&quot;);
+}
+
+// BULB OFF
+else if (command == &quot;OFF&quot;) {
+  digitalWrite(RELAY_PIN, HIGH);
+  Serial.println(&quot;Relay: OFF&quot;);
+  Serial.println(&quot;Bulb: OFF&quot;);
+}</code></pre>
+        <p class="prose">In this firmware a LOW output turns the relay on and a HIGH output turns it off, so the relay board is active-low.</p>
+        <h3 class="sub">Firmware structure</h3>
+        <ol class="steps"><li><b>Include libraries.</b> Load Wi-Fi and Adafruit MQTT support.</li><li><b>Define credentials and network values.</b> Wi-Fi details, Adafruit IO username and key, broker host and port.</li><li><b>Create the WiFiClient.</b> This is the network transport.</li><li><b>Create the MQTT client.</b> Pass in the network object, broker, port, username and key.</li><li><b>Create the feed subscription.</b> Subscribe to the username plus <code>/feeds/Bulb</code>.</li><li><b>Connect to Wi-Fi.</b> Wait for a valid connection and an IP address.</li><li><b>Connect to MQTT.</b> Log in to Adafruit IO and keep the session open.</li><li><b>Process incoming packets.</b> Compare a new Bulb payload with ON or OFF.</li><li><b>Drive GPIO 26.</b> Set the relay level that matches the command.</li><li><b>Print the evidence.</b> Write the command and the relay and bulb state to the Serial Monitor.</li></ol>
+      </section>
+
+      <section class="doc" id="working">
+        <h2>How it works</h2>
+        <ol class="steps"><li>The user presses the ON or OFF toggle on the dashboard.</li><li>The toggle publishes its text value to the Bulb feed.</li><li>Adafruit IO exposes that feed through its MQTT service.</li><li>The ESP32 stays connected to the broker and subscribed to <code>kumaraguru_rac/feeds/Bulb</code>.</li><li>The broker forwards the new Bulb payload to the ESP32.</li><li>The firmware compares the payload with ON or OFF.</li><li>GPIO 26 is set to the relay level for that state.</li><li>The relay switches the bulb or LED.</li><li>The Serial Monitor prints the command and the resulting relay and bulb state.</li></ol>
+        <div class="table-wrap narrow"><table class="cmp small"><thead><tr><th>Stage</th><th>ON state</th><th>OFF state</th></tr></thead><tbody><tr><td>Dashboard toggle</td><td>ON selected</td><td>OFF selected</td></tr><tr><td>Payload</td><td>&ldquo;ON&rdquo;</td><td>&ldquo;OFF&rdquo;</td></tr><tr><td>Firmware branch</td><td>command == &ldquo;ON&rdquo;</td><td>command == &ldquo;OFF&rdquo;</td></tr><tr><td>GPIO 26 output</td><td>LOW</td><td>HIGH</td></tr><tr><td>Relay result</td><td>Relay ON</td><td>Relay OFF</td></tr><tr><td>Physical load</td><td>Bulb or LED ON</td><td>Bulb or LED OFF</td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc" id="photos">
+        <h2>Hardware photos</h2>
+        <p class="prose">The dashboard toggle on the laptop and the bulb on the bench, in both states. The ESP32 and relay module are in front of the bulb holder.</p>
+        <div class="figs pair"><figure class="shot fig"><a href="images/iot/task2/bulb-off.jpg" target="_blank" rel="noopener"><img src="images/iot/task2/bulb-off.jpg" alt="Laptop showing the Adafruit IO dashboard toggle at OFF, with the bulb unlit beside the ESP32 and relay"></a><figcaption>Dashboard toggle at OFF: the bulb is off.</figcaption></figure><figure class="shot fig"><a href="images/iot/task2/bulb-on.jpg" target="_blank" rel="noopener"><img src="images/iot/task2/bulb-on.jpg" alt="Laptop showing the Adafruit IO dashboard toggle at ON, with the bulb lit beside the ESP32 and relay"></a><figcaption>Dashboard toggle at ON: the bulb is lit.</figcaption></figure></div>
+      </section>
+
+      <section class="doc" id="output">
+        <h2>Output</h2>
+        <h3 class="sub">Serial Monitor</h3>
+        <p class="prose">After boot, the ESP32 prints its Wi-Fi status and IP address, then the feed name and topic, then connects to Adafruit IO. Each command from the dashboard shows up as a received message, followed by the relay and bulb state.</p>
+        <div class="figs"><figure class="shot fig"><a href="images/iot/task2/serial-connect.png" target="_blank" rel="noopener"><img src="images/iot/task2/serial-connect.png" alt="Serial Monitor showing Wi-Fi connected, the IP address, the Bulb topic and MQTT Connected"></a><figcaption><b>Figure 7.</b> Wi-Fi connected, IP address shown, feed and topic printed, MQTT connected.</figcaption></figure></div>
+        <div class="figs two"><figure class="shot fig"><a href="images/iot/task2/serial-on.png" target="_blank" rel="noopener"><img src="images/iot/task2/serial-on.png" alt="Serial Monitor showing Received MQTT Command ON, Relay ON, Bulb ON"></a><figcaption><b>Figure 8.</b> An ON command received: relay and bulb reported ON.</figcaption></figure><figure class="shot fig"><a href="images/iot/task2/serial-both.png" target="_blank" rel="noopener"><img src="images/iot/task2/serial-both.png" alt="Serial Monitor showing ON then OFF commands with relay and bulb states"></a><figcaption><b>Figure 9.</b> ON and OFF commands both received and processed.</figcaption></figure></div>
+        <h3 class="sub">Dashboard states</h3>
+        <div class="figs two"><figure class="shot fig"><a href="images/iot/task2/dash-on.png" target="_blank" rel="noopener"><img src="images/iot/task2/dash-on.png" alt="Adafruit IO Bulb dashboard with the toggle at ON"></a><figcaption><b>Figure 10.</b> The dashboard toggle at ON after a command.</figcaption></figure><figure class="shot fig"><a href="images/iot/task2/dash-off.png" target="_blank" rel="noopener"><img src="images/iot/task2/dash-off.png" alt="Adafruit IO Bulb dashboard with the toggle at OFF"></a><figcaption><b>Figure 11.</b> The dashboard toggle at OFF after a command.</figcaption></figure></div>
+      </section>
+
+      <section class="doc" id="verify">
+        <h2>Verification</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Check</th><th>Evidence</th><th>Status</th></tr></thead><tbody><tr><td>Wi-Fi connection</td><td>Serial Monitor shows Wi-Fi connected and an IP address</td><td><span class="pass">Verified</span></td></tr><tr><td>MQTT connection</td><td>Serial Monitor shows MQTT Connected!</td><td><span class="pass">Verified</span></td></tr><tr><td>Correct feed</td><td>Serial Monitor shows Feed: Bulb</td><td><span class="pass">Verified</span></td></tr><tr><td>Correct topic</td><td>Serial Monitor shows kumaraguru_rac/feeds/Bulb</td><td><span class="pass">Verified</span></td></tr><tr><td>ON command</td><td>Received MQTT Command: ON</td><td><span class="pass">Verified</span></td></tr><tr><td>OFF command</td><td>Received MQTT Command: OFF</td><td><span class="pass">Verified</span></td></tr><tr><td>Relay response</td><td>Relay: ON and Relay: OFF messages appear</td><td><span class="pass">Verified</span></td></tr><tr><td>Dashboard response</td><td>Toggle switches between ON and OFF</td><td><span class="pass">Verified</span></td></tr><tr><td>Bulb response</td><td>Photos show the bulb off with OFF and lit with ON</td><td><span class="pass">Verified</span></td></tr></tbody></table></div>
+        <h3 class="sub">Result</h3>
+        <p class="prose">The prototype sends commands from the Adafruit IO dashboard to the ESP32 over MQTT and the relay follows them. The Serial Monitor shows the expected order: Wi-Fi, MQTT connection, topic subscription, ON or OFF payload, relay control. The bulb photos show the physical result.</p>
+      </section>
+
+      <section class="doc" id="trouble">
+        <h2>Troubleshooting</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Symptom</th><th>Likely cause</th><th>Action</th></tr></thead><tbody><tr><td>MQTT does not connect</td><td>Wi-Fi, username, key, server or port problem</td><td>Check Wi-Fi, account values, broker host and port.</td></tr><tr><td>Dashboard changes but the relay does not</td><td>Wrong topic or no subscription</td><td>Confirm the code subscribes to kumaraguru_rac/feeds/Bulb.</td></tr><tr><td>Relay does the opposite</td><td>Active-low relay input</td><td>Confirm LOW is ON and HIGH is OFF for your relay board.</td></tr><tr><td>Compile error</td><td>Board support or library missing</td><td>Install ESP32 board support and the Adafruit MQTT Library.</td></tr><tr><td>No serial output</td><td>Wrong COM port or baud rate</td><td>Select the right ESP32 port and baud rate.</td></tr><tr><td>Unexpected payload</td><td>Toggle values set differently</td><td>Set the published values to exactly ON and OFF.</td></tr><tr><td>Key stops working</td><td>Key was regenerated or changed</td><td>Use the current key and update the firmware.</td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc" id="security">
+        <h2>Security and deployment</h2>
+        <ul class="tick warn"><li>Treat the Adafruit IO key as a secret. Keep it out of reports, screenshots, repositories and slides.</li><li>Regenerate the key if it has appeared in a screenshot or shared document.</li><li>Keep Wi-Fi passwords out of public source code.</li><li>For real use, switch mains loads through a properly rated and isolated device. Never wire a mains load directly to an ESP32 pin.</li><li>For better security, use a TLS-secured MQTT connection where the service and library support it.</li><li>As the firmware grows, move secrets into a separate configuration file.</li></ul>
+      </section>
+
+      <section class="doc deep" id="deep"><h2>In depth: how it really works</h2><p class="prose">This section follows one message through the whole system, explains the firmware piece by piece, and covers the MQTT ideas the task depends on: quality of service, keep-alive and the active-low relay.</p>
+<h3 class="sub">What happens when you flip the toggle</h3><ol class="trace"><li><b>The dashboard sends a value.</b> Moving the toggle writes <code>ON</code> or <code>OFF</code> to the <code>Bulb</code> feed in Adafruit IO.</li><li><b>The broker publishes it.</b> Adafruit IO&rsquo;s MQTT broker takes the new value and publishes it on the topic <code>kumaraguru_rac/feeds/Bulb</code>.</li><li><b>The ESP32 is already listening.</b> Earlier, the ESP32 opened an outgoing TCP connection to <code>io.adafruit.com</code> on port 1883, logged in with the username and key and subscribed to that topic. The broker sends the message down this open connection.</li><li><b>The sketch reads it.</b> <code>mqtt.readSubscription(1000)</code> waits up to one second for a packet. When one arrives it returns a pointer to the subscription that received it.</li><li><b>The sketch decides.</b> <code>subscription == &amp;bulbFeed</code> confirms which feed it came from. <code>bulbFeed.lastread</code> holds the text, which is compared with <code>&quot;ON&quot;</code> and <code>&quot;OFF&quot;</code>.</li><li><b>The relay switches.</b> A LOW on GPIO 26 energises the relay coil, which closes the contacts and lights the bulb. HIGH releases it.</li><li><b>The log confirms.</b> The Serial Monitor prints the command, the relay state and the bulb state, so each stage can be checked.</li></ol><h3 class="sub">Why MQTT and not HTTP</h3>
+<p class="prose">In Task 1 the browser connected to the ESP32. Here the ESP32 connects out to the cloud and keeps the connection open. An outgoing connection passes through a home router without any setup, so there is no port forwarding and no public address. The broker can then push a message the moment it arrives, instead of the device asking over and over whether anything changed. Each MQTT message also has a very small header, which suits a microcontroller.</p>
+<h3 class="sub">The code, piece by piece</h3><div class="table-wrap"><table class="cmp"><thead><tr><th>Code</th><th>What it does and why</th></tr></thead><tbody><tr><td><code>WiFiClient client</code></td><td>The network connection object. MQTT travels over TCP, and this object is the TCP connection.</td></tr><tr><td><code>Adafruit_MQTT_Client mqtt(&amp;client, SERVER, PORT, USER, KEY)</code></td><td>Builds the MQTT client. It needs the connection, the broker address and port, and the account name and key used to log in.</td></tr><tr><td><code>Adafruit_MQTT_Subscribe bulbFeed(&amp;mqtt, USER &quot;/feeds/Bulb&quot;)</code></td><td>Describes what to listen to. The two strings next to each other are joined by the compiler into <code>kumaraguru_rac/feeds/Bulb</code>. A typo here fails silently: the connection works but nothing ever arrives.</td></tr><tr><td><code>#define RELAY_PIN 26</code></td><td>The output pin wired to the relay input.</td></tr><tr><td><code>mqtt.readSubscription(1000)</code></td><td>Waits up to 1000 ms for incoming data. It returns nothing if the time runs out, so the loop keeps cycling and the program stays responsive.</td></tr><tr><td><code>subscription == &amp;bulbFeed</code></td><td>With more than one subscription, this check tells which feed a message belongs to. With a single feed it is still a good habit.</td></tr><tr><td><code>(char *)bulbFeed.lastread</code></td><td>The library keeps the most recent payload as a character buffer. Wrapping it in a <code>String</code> makes it easy to compare.</td></tr><tr><td><code>command == &quot;ON&quot;</code></td><td>The comparison is exact and case-sensitive. <code>on</code> or <code>On</code> would be ignored, so the dashboard and the code must use the same words.</td></tr><tr><td><code>digitalWrite(RELAY_PIN, LOW)</code></td><td>Turns the relay on, because this relay board is active-low.</td></tr><tr><td><code>digitalWrite(RELAY_PIN, HIGH)</code></td><td>Turns the relay off.</td></tr></tbody></table></div><h3 class="sub">MQTT ideas explained</h3>
+<p class="prose"><b>Broker, publisher, subscriber.</b> Neither side knows the other exists. The publisher sends to a topic and the broker delivers to whoever subscribed. That is why Task 3 can add a new sender, IFTTT, without touching this firmware.</p>
+<p class="prose"><b>Topic structure.</b> <code>kumaraguru_rac/feeds/Bulb</code> reads like a path: the account, the word <code>feeds</code>, then the feed name. Adafruit IO builds topics in this shape, so the account name must match the one used to log in.</p>
+<p class="prose"><b>Quality of service.</b> MQTT has three delivery levels. <b>QoS 0</b> sends once with no confirmation, so a message can be lost. <b>QoS 1</b> repeats until the receiver acknowledges, so the message arrives at least once but may arrive twice. <b>QoS 2</b> uses a four-step handshake so it arrives exactly once, at the cost of more traffic. For a switch, QoS 1 is a sensible choice: a repeated ON is harmless, but a lost one is not.</p>
+<p class="prose"><b>Keep-alive.</b> The client and broker exchange tiny ping packets at an agreed interval. If they stop, the broker treats the client as gone. This is why an MQTT sketch pings in its loop and reconnects when the link drops.</p>
+<p class="prose"><b>Port 1883.</b> This is the standard plain-text MQTT port. Port 8883 is the encrypted version. Plain text is fine for learning, but the key travels unencrypted, which is one more reason to regenerate it if it leaks.</p>
+<p class="prose"><b>Active-low relay.</b> Many relay modules switch on when the input is pulled to ground, because the input drives an optocoupler LED to the supply. So LOW means on and HIGH means off. A bench test with a low-voltage load before connecting mains shows which way a given board works.</p>
+<p class="prose"><b>Why the relay.</b> A GPIO pin supplies a few milliamps at 3.3 V and cannot power a bulb. The relay lets that small signal switch a separate circuit. Its contacts are electrically isolated from the ESP32, which keeps the mains side away from the microcontroller. Mains wiring should be done only with proper supervision and a rated, enclosed setup.</p>
+<h3 class="sub">What can go wrong</h3>
+<ul class="tick warn"><li>A wrong username or key stops the connection, and the Serial Monitor shows a connect error instead of <code>MQTT Connected!</code>.</li><li>A wrong feed name connects but never receives a message.</li><li>If Wi-Fi drops, the sketch has to reconnect to Wi-Fi first and then to the broker.</li><li>A relay wired backwards makes the bulb light when the dashboard says OFF. Check the logic before blaming the cloud.</li></ul></section>
+
+      <section class="doc" id="conclusion">
+        <h2>Conclusion</h2>
+        <p class="prose">The Adafruit IO dashboard is the interface, the Bulb feed carries the state, and MQTT moves it with light publish and subscribe messaging. The ESP32 is the device-side client, and GPIO 26 drives the relay that switches the load. The serial output and photos confirm the whole chain from dashboard click to bulb.</p>
+        <div class="pager"><a class="btn line" href="iot-task1.html">&larr; Task 1</a> <a class="btn line" href="protosem.html#iot">Back to IoT tasks</a> <a class="btn line" href="iot-task3.html">Next: Task 3 &rarr;</a></div>
+      </section>
+    </main>
+    <footer class="foot">
+      <span>&copy; <span data-year>2026</span> Jai Surya S K · ECE, Kumaraguru College of Technology</span>
+      <span>Coimbatore, Tamil Nadu</span>
+    </footer>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>IoT Task 5 · Jai Surya S K</title>
+  <meta name="description" content="IoT session Task 5: IoT control of the bulb with sensors, Firebase and a web dashboard.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="main">
+    <header class="topbar">
+      <div class="in">
+        <a class="mono-logo" href="index.html" aria-label="Jai Surya S K, home">JS</a>
+        <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+        <nav aria-label="Main">
+          <ul class="nav" id="site-nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="experience.html">Experience</a></li>
+          <li><a href="projects.html">Projects</a></li>
+          <li><a href="protosem.html" aria-current="page">ProtoSem</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main class="page">
+      <div class="crumb"><a href="protosem.html#iot">ProtoSem</a> <span>/</span> <a href="protosem.html#iot">IoT</a> <span>/</span> Task 5</div>
+      <div class="page-top"><div class="eyebrow">IoT session &middot; Task 05</div><h1 class="page-title">IoT control of the <em>bulb</em>, all together</h1>
+      <p class="page-lede">Sensors, an ESP32, Firebase and a web dashboard working as one system to monitor the lab and control its bulb in Manual and Automatic modes. This page documents the hardware, firmware, data, tests and what is left to finish. The dashboard itself is shown in <a href="iot-task4.html">Task 4</a>.</p></div>
+
+      <div class="facts-row">
+        <div><span>Controller</span><b>ESP32</b></div>
+        <div><span>Sensors</span><b>DHT11 + LDR</b></div>
+        <div><span>Cloud</span><b>Firebase</b></div>
+        <div><span>History records</span><b>184</b></div>
+      </div>
+
+      <nav class="toc" aria-label="On this page"><a href="#status">Status</a><a href="#arch">Architecture</a><a href="#hw">Hardware</a><a href="#stack">Software</a><a href="#firmware">Firmware</a><a href="#modes">Modes</a><a href="#dash">Dashboard code</a><a href="#data">Data</a><a href="#trace">Requirements</a><a href="#tests">Tests</a><a href="#findings">Findings</a><a href="#security">Security</a><a href="#ops">Operation</a><a href="#trouble">Troubleshooting</a><a href="#deep">In depth</a><a href="#conclusion">Conclusion</a></nav>
+
+      <section class="doc" id="status">
+        <h2>Where the project stands</h2>
+        <p class="prose">The write-up separates what was seen working from what was only written in code. That makes it useful for a technical review, because nothing is claimed that was not checked.</p>
+        <div class="two-col">
+          <div><h3 class="sub" style="margin-top:6px">Working and evidenced</h3><ul class="tick"><li>Landing page, sign-in and dashboard are in place.</li><li>Live temperature, humidity and light values reach the page from the ESP32 through Firebase.</li><li>Manual and Auto buttons write the mode to Firebase.</li><li>The LDR threshold is validated and saved.</li><li>History logging every 30 seconds: 184 records in the export.</li><li>Videos show the bulb switching in Manual mode and in Automatic mode.</li><li>Charts, history table and CSV export are built into the dashboard.</li></ul></div>
+          <div><h3 class="sub" style="margin-top:6px">Still to complete</h3><ul class="tick warn"><li>The supplied sketch does not read <code>bulbState</code>, <code>mode</code> or <code>ldrThreshold</code> from Firebase.</li><li>The supplied sketch has no code after set-up that writes the relay pin.</li><li>The firmware&rsquo;s threshold is a local 400 and the saved one is 2800.</li><li>The firmware version used in the videos has to be added to the documentation.</li><li>Relay polarity and LDR direction have to be checked on the bench.</li></ul></div>
+        </div>
+        <p class="src"><b>In one line:</b> the sensors, Firebase, sign-in, charts, history and the web controls work, and the videos show the bulb switching in both modes. The sketch supplied with the report does not yet read the dashboard&rsquo;s light, mode and threshold values or drive the relay, so the version used for the demo still has to be documented.</p>
+      </section>
+
+      <section class="doc" id="arch">
+        <h2>Architecture</h2>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task5/architecture.png" target="_blank" rel="noopener"><img src="images/iot/task5/architecture.png" alt="Architecture diagram: browser, web app, Firebase, ESP32, DHT11, LDR and relay" loading="lazy"></a><figcaption><b>Figure 1.</b> Logical architecture. The relay path is marked as not yet implemented in the supplied firmware.</figcaption></figure></div>
+        <h3 class="sub">Data flow</h3>
+        <ol class="steps"><li>The user signs in to the web app.</li><li>The dashboard listens to <code>labAutomation/current</code> and <code>labAutomation/history</code>.</li><li>The ESP32 reads the DHT11 and the LDR and writes the current values.</li><li>Every 30 seconds it pushes a history record.</li><li>The dashboard updates its cards, bulb state, mode and threshold when Firebase changes.</li><li>Dashboard actions write <code>bulbState</code>, <code>mode</code> and <code>ldrThreshold</code> to Firebase.</li><li>To close the loop, the ESP32 must read those values and drive the relay. That step is not in the supplied firmware.</li></ol>
+      </section>
+
+      <section class="doc" id="hw">
+        <h2>Hardware</h2>
+        <p class="prose">The pin assignments below come straight from the firmware. They are software settings, not a wiring check.</p>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Component</th><th>Function</th><th>ESP32 pin</th><th>Source</th></tr></thead><tbody><tr><td>DHT11</td><td>Temperature and humidity</td><td>GPIO 4</td><td><code>DHTPIN 4</code>, <code>DHTTYPE DHT11</code></td></tr><tr><td>LDR</td><td>Analog ambient light</td><td>GPIO 34</td><td><code>LDR_PIN 34</code>, <code>analogRead()</code></td></tr><tr><td>Relay</td><td>Lab light output</td><td>GPIO 26</td><td><code>RELAY_PIN 26</code></td></tr><tr><td>Wi-Fi</td><td>Network</td><td>Built in</td><td><code>WiFi.begin()</code></td></tr><tr><td>Firebase</td><td>Cloud sync</td><td>Wi-Fi + TLS client</td><td>FirebaseClient library</td></tr></tbody></table></div>
+        <p class="prose"><b>Sensors.</b> The DHT11 and the LDR are read every 5 seconds. <b>Relay.</b> GPIO 26 is set as an output and written LOW once at start-up. Nothing in the supplied firmware writes it again.</p>
+      </section>
+
+      <section class="doc" id="stack">
+        <h2>Software stack</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Layer</th><th>Technology</th><th>Role</th></tr></thead><tbody><tr><td>Web UI</td><td>HTML5</td><td>Landing page, login page and dashboard structure</td></tr><tr><td>Styling</td><td>CSS</td><td>Responsive dashboard and control cards</td></tr><tr><td>Client logic</td><td>JavaScript modules</td><td>Firebase listeners, controls, charts, history, CSV</td></tr><tr><td>Authentication</td><td>Firebase Authentication</td><td>Email and password, Google sign-in, logout, password reset</td></tr><tr><td>Database</td><td>Firebase Realtime Database</td><td>Current state and history</td></tr><tr><td>Embedded</td><td>ESP32, C++</td><td>Sensors, Wi-Fi, NTP time and Firebase writes</td></tr><tr><td>Libraries</td><td>FirebaseClient, DHT</td><td>Firebase communication and DHT11 sensing</td></tr><tr><td>Time</td><td>NTP</td><td>Timestamps with the India UTC+5:30 offset</td></tr><tr><td>Web SDK</td><td>Firebase JS SDK 10.5.0</td><td>Browser-side Firebase</td></tr></tbody></table></div>
+        <pre class="code" style="margin-top:18px"><code>RAC Lab Automation
+├── Landing page
+├── Login page  (Firebase Authentication)
+├── Dashboard
+│   ├── Current monitoring
+│   ├── Lighting control, operating mode, LDR threshold
+│   ├── Temperature and humidity chart, LDR chart
+│   └── Historical data + CSV export
+├── Firebase Realtime Database
+│   ├── labAutomation/current
+│   └── labAutomation/history
+└── ESP32 firmware
+    ├── DHT11, LDR, Wi-Fi, NTP
+    └── Firebase writes</code></pre>
+      </section>
+
+      <section class="doc" id="firmware">
+        <h2>ESP32 firmware</h2>
+        <p class="prose">What the firmware does: connect to Wi-Fi, get the time from NTP, sign in to Firebase, read the sensors, update the current values and push a history record. The listings here are sanitised. All passwords, keys, the account and the database address are placeholders.</p>
+        <h3 class="sub">Configuration and state</h3>
+        <div class="code-head"><span>configuration.ino</span><button class="copy" type="button" data-copy="#code-cfg">Copy code</button></div><pre class="code" id="code-cfg"><code>#define ENABLE_USER_AUTH
+#define ENABLE_DATABASE
+#include &lt;WiFi.h&gt;
+#include &lt;WiFiClientSecure.h&gt;
+#include &lt;FirebaseClient.h&gt;
+#include &lt;DHT.h&gt;
+#include &lt;time.h&gt;
+
+#define WIFI_SSID      &quot;YOUR_WIFI_NAME&quot;
+#define WIFI_PASSWORD  &quot;YOUR_WIFI_PASSWORD&quot;
+#define API_KEY        &quot;YOUR_FIREBASE_API_KEY&quot;
+#define USER_EMAIL     &quot;YOUR_FIREBASE_USER_EMAIL&quot;
+#define USER_PASSWORD  &quot;YOUR_FIREBASE_USER_PASSWORD&quot;
+#define DATABASE_URL   &quot;YOUR_DATABASE_URL&quot;
+
+#define DHTPIN    4
+#define DHTTYPE   DHT11
+#define LDR_PIN   34
+#define RELAY_PIN 26
+
+const unsigned long SENSOR_INTERVAL  = 5000;   // 5 s
+const unsigned long HISTORY_INTERVAL = 30000;  // 30 s
+
+// &quot;These will be connected to Firebase control later.&quot;
+bool   bulbState     = false;
+String operatingMode = &quot;MANUAL&quot;;
+int    ldrThreshold  = 400;</code></pre>
+        <h3 class="sub">Setup</h3>
+        <div class="code-head"><span>setup.ino</span><button class="copy" type="button" data-copy="#code-setup">Copy code</button></div><pre class="code" id="code-setup"><code>void setup() {
+  Serial.begin(115200);
+  dht.begin();
+
+  pinMode(LDR_PIN, INPUT);
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW);
+
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) { Serial.print(&quot;.&quot;); delay(300); }
+
+  configTime(19800, 0, &quot;pool.ntp.org&quot;, &quot;time.nist.gov&quot;);  // UTC+5:30
+  delay(2000);
+
+  ssl_client.setInsecure();
+  initializeApp(aClient, app, getAuth(user_auth), processData, &quot;authTask&quot;);
+  app.getApp&lt;RealtimeDatabase&gt;(Database);
+  Database.url(DATABASE_URL);
+}</code></pre>
+        <h3 class="sub">Main loop</h3>
+        <div class="code-head"><span>loop.ino</span><button class="copy" type="button" data-copy="#code-loop">Copy code</button></div><pre class="code" id="code-loop"><code>void loop() {
+  app.loop();                       // Firebase background work
+  if (!app.ready()) return;
+
+  if (millis() - lastSensorUpdate &gt;= SENSOR_INTERVAL) {
+    lastSensorUpdate = millis();
+
+    float temperature = dht.readTemperature();
+    float humidity    = dht.readHumidity();
+    int   ldrValue    = analogRead(LDR_PIN);
+
+    if (isnan(temperature) || isnan(humidity)) {
+      Serial.println(&quot;DHT11 read failed.&quot;);
+      return;
+    }
+    String timestamp = getTimestamp();
+
+    // Latest values
+    Database.set&lt;number_t&gt;(aClient, &quot;/labAutomation/current/temperature&quot;, number_t(temperature, 2));
+    Database.set&lt;number_t&gt;(aClient, &quot;/labAutomation/current/humidity&quot;,    number_t(humidity, 2));
+    Database.set&lt;int&gt;     (aClient, &quot;/labAutomation/current/ldr&quot;,         ldrValue);
+
+    // History record every 30 s
+    if (millis() - lastHistoryLog &gt;= HISTORY_INTERVAL) {
+      lastHistoryLog = millis();
+      String historyJson = &quot;{\&quot;timestamp\&quot;:\&quot;&quot; + timestamp + &quot;\&quot;,&quot;
+                           &quot;\&quot;temperature\&quot;:&quot; + String(temperature, 2) + &quot;,&quot;
+                           &quot;\&quot;humidity\&quot;:&quot;    + String(humidity, 2) + &quot;,&quot;
+                           &quot;\&quot;ldr\&quot;:&quot;         + String(ldrValue) + &quot;,&quot;
+                           &quot;\&quot;bulbState\&quot;:&quot;   + (bulbState ? &quot;true&quot; : &quot;false&quot;) + &quot;,&quot;
+                           &quot;\&quot;mode\&quot;:\&quot;&quot;      + operatingMode + &quot;\&quot;}&quot;;
+      Database.push&lt;object_t&gt;(aClient, &quot;/labAutomation/history&quot;, object_t(historyJson));
+    }
+  }
+}</code></pre>
+        <div class="table-wrap" style="margin-top:20px"><table class="cmp"><thead><tr><th>Element</th><th>Documented behaviour</th></tr></thead><tbody><tr><td><code>setup()</code></td><td>Starts serial, DHT11, GPIOs, Wi-Fi, NTP, the TLS client and Firebase.</td></tr><tr><td><code>loop()</code></td><td>Runs Firebase background work and reads the sensors on a timer.</td></tr><tr><td><code>getTimestamp()</code></td><td>Returns YYYY-MM-DD HH:MM:SS in local time.</td></tr><tr><td>Current values</td><td>Temperature, humidity and LDR are written to <code>labAutomation/current</code>.</td></tr><tr><td>History</td><td>A JSON record is pushed under <code>labAutomation/history</code>.</td></tr><tr><td>Relay set-up</td><td>GPIO 26 is an output, written LOW once.</td></tr><tr><td>Control readback</td><td>Not present in the supplied firmware.</td></tr></tbody></table></div>
+        <div class="table-wrap narrow" style="margin-top:18px"><table class="cmp small"><thead><tr><th>Timer</th><th>Interval</th><th>What it triggers</th></tr></thead><tbody><tr><td>SENSOR_INTERVAL</td><td>5000 ms</td><td>Sensor read and current-value update</td></tr><tr><td>HISTORY_INTERVAL</td><td>30000 ms</td><td>New history record</td></tr><tr><td>NTP offset</td><td>19800 s</td><td>UTC+5:30</td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc" id="modes">
+        <h2>Manual and automatic modes</h2>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task5/operating-modes.png" target="_blank" rel="noopener"><img src="images/iot/task5/operating-modes.png" alt="Flow diagram of manual and automatic mode ending at the ESP32 relay decision" loading="lazy"></a><figcaption><b>Figure 2.</b> Operating-mode flow. The final relay decision is the gap in the supplied firmware.</figcaption></figure></div>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Feature</th><th>MANUAL</th><th>AUTO</th></tr></thead><tbody><tr><td>Who decides the light?</td><td>The user</td><td>Logic using the LDR threshold</td></tr><tr><td>Dashboard bulb button</td><td>Enabled</td><td>Disabled</td></tr><tr><td>Firebase mode value</td><td>MANUAL</td><td>AUTO</td></tr><tr><td>Threshold used?</td><td>No</td><td>Yes, as intended</td></tr><tr><td>Typical use</td><td>Direct control and testing</td><td>Automatic lighting</td></tr><tr><td>Relay decision in the supplied firmware</td><td>Not implemented</td><td>Not implemented</td></tr><tr><td>Web UI handling</td><td>Implemented</td><td>Implemented</td></tr></tbody></table></div>
+        <p class="prose" style="margin-top:18px">The mode switch, the bulb button and the threshold box all sit on the dashboard. In the capture the mode is Manual, the bulb is OFF and the threshold is 2800.</p>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task4/dashboard.png" target="_blank" rel="noopener"><img src="images/iot/task4/dashboard.png" alt="Control dashboard showing the readings, the bulb control, Manual mode and threshold 2800" loading="lazy"></a><figcaption><b>Figure 3.</b> The dashboard: live values, bulb control, operating mode and LDR threshold.</figcaption></figure></div>
+        <h3 class="sub">Both modes on video</h3>
+        <p class="prose">Two short recordings of the bench setup. Watch the bulb on the desk next to the laptop: it lights and goes off in both clips.</p>
+        <div class="vid-pair"><figure class="vid"><video controls playsinline preload="metadata" poster="videos/task5/manual-mode.jpg"><source src="videos/task5/manual-mode.mp4" type="video/mp4">Your browser cannot play this video.</video><figcaption><b>Manual mode.</b> The operator uses the dashboard and the bulb follows.</figcaption></figure><figure class="vid"><video controls playsinline preload="metadata" poster="videos/task5/automatic-mode.jpg"><source src="videos/task5/automatic-mode.mp4" type="video/mp4">Your browser cannot play this video.</video><figcaption><b>Automatic mode.</b> The same setup running in Automatic mode.</figcaption></figure></div>
+        <p class="src"><b>About the evidence.</b> The videos show the lamp switching in Manual and in Automatic mode. The firmware supplied with the report has no code that reads the controls back or drives the relay, so the version used for these recordings is not the sketch listed above. Documenting that version would close findings F02 to F05.</p>
+        <h3 class="sub">What the web layer does</h3>
+        <ol class="steps"><li>Choose MANUAL on the dashboard.</li><li>The dashboard writes <code>MANUAL</code> to <code>labAutomation/current/mode</code>.</li><li>The bulb button becomes available.</li><li>Turn ON or Turn OFF flips the logical <code>bulbState</code> and writes it to Firebase.</li><li>The page updates when the listener receives the new value.</li><li>In the finished system the ESP32 would read <code>bulbState</code> and drive the relay.</li></ol>
+        <ol class="steps"><li>Choose AUTOMATIC on the dashboard.</li><li>The dashboard writes <code>AUTO</code> to <code>mode</code>.</li><li>The bulb button is disabled in the browser.</li><li>The threshold is kept in <code>ldrThreshold</code>.</li><li>The intended rule is LDR &gt; threshold means light ON, and LDR &le; threshold means light OFF.</li><li>The ESP32 would need to read the mode and threshold and apply the rule itself.</li></ol>
+        <p class="prose"><b>Threshold.</b> The dashboard accepts a number from 0 to 4095 (the 12-bit ADC range) before saving it to Firebase. The saved value in the captured data is 2800, while the firmware&rsquo;s own default is 400 and it never reads the Firebase value.</p>
+      </section>
+
+      <section class="doc" id="dash">
+        <h2>Dashboard code</h2>
+        <p class="prose">The dashboard is a Firebase web app written as JavaScript modules. The screens are shown in <a href="iot-task4.html#ui">Task 4</a>. Here is what each block of the script does.</p>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Function or block</th><th>Purpose</th></tr></thead><tbody><tr><td>Firebase initialisation</td><td>Creates or reuses the Firebase app and connects to the database.</td></tr><tr><td><code>currentRef</code>, <code>historyRef</code></td><td>References to <code>labAutomation/current</code> and <code>labAutomation/history</code>.</td></tr><tr><td><code>onValue(currentRef)</code></td><td>Receives live updates and refreshes the dashboard.</td></tr><tr><td><code>updateSensorValues()</code></td><td>Updates the temperature, humidity and LDR values.</td></tr><tr><td><code>updateBulbUI()</code></td><td>Updates the bulb indicator and disables the manual button in AUTO.</td></tr><tr><td><code>updateModeUI()</code></td><td>Updates the MANUAL and AUTO badges and buttons.</td></tr><tr><td><code>updateThresholdUI()</code></td><td>Shows the Firebase threshold in the input.</td></tr><tr><td>Bulb control listener</td><td>Writes <code>bulbState</code> unless the mode is AUTO.</td></tr><tr><td>Mode listeners</td><td>Write MANUAL or AUTO to Firebase.</td></tr><tr><td>Threshold save</td><td>Checks 0 to 4095, then writes <code>ldrThreshold</code>.</td></tr><tr><td>History listener</td><td>Loads history and refreshes the table and charts.</td></tr><tr><td>CSV generation</td><td>Builds a download with timestamp, temperature, humidity, LDR, bulb state and mode.</td></tr></tbody></table></div>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task4/home.png" target="_blank" rel="noopener"><img src="images/iot/task4/home.png" alt="Lab Automation landing page with a login button" loading="lazy"></a><figcaption><b>Figure 4.</b> The landing page, the entry point to the app.</figcaption></figure></div>
+        <h3 class="sub">Sign-in</h3>
+        <div class="figs" style="grid-template-columns:minmax(0,380px);margin:0 0 18px"><figure class="shot fig"><a href="images/iot/task4/login.png" target="_blank" rel="noopener"><img src="images/iot/task4/login.png" alt="Sign-in form with email, password and Google options" loading="lazy"></a><figcaption><b>Figure 5.</b> The sign-in screen with email, Google and password reset. Credentials were removed.</figcaption></figure></div>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Feature</th><th>How it is done</th></tr></thead><tbody><tr><td>Email and password</td><td><code>signInWithEmailAndPassword()</code></td></tr><tr><td>Google sign-in</td><td><code>GoogleAuthProvider</code> with <code>signInWithPopup()</code></td></tr><tr><td>Route protection</td><td><code>onAuthStateChanged()</code> sends signed-out visitors to the login page</td></tr><tr><td>Signed-in display</td><td>The user&rsquo;s email appears in the dashboard header</td></tr><tr><td>Password reset</td><td><code>sendPasswordResetEmail()</code></td></tr><tr><td>Error messages</td><td>Firebase errors are turned into readable text</td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc" id="data">
+        <h2>Data, history and CSV</h2>
+        <p class="prose">The database as seen in the Firebase console, and the two views the dashboard builds from it.</p>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task4/database.png" target="_blank" rel="noopener"><img src="images/iot/task4/database.png" alt="Firebase console tree showing the labAutomation current values" loading="lazy"></a><figcaption><b>Figure 6.</b> The Firebase Realtime Database: the current branch with the six control and sensor values.</figcaption></figure></div>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task4/analytics.png" target="_blank" rel="noopener"><img src="images/iot/task4/analytics.png" alt="Line charts of temperature, humidity and light over time" loading="lazy"></a><figcaption><b>Figure 7.</b> Temperature, humidity and LDR charts drawn from the history records.</figcaption></figure></div>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task4/history.png" target="_blank" rel="noopener"><img src="images/iot/task4/history.png" alt="Table of timestamped readings with a Download CSV button" loading="lazy"></a><figcaption><b>Figure 8.</b> The history table, latest first, with the Download CSV button.</figcaption></figure></div>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Path</th><th>Field</th><th>Type</th><th>Meaning</th></tr></thead><tbody><tr><td>labAutomation/current</td><td>temperature</td><td>number</td><td>Current temperature in &deg;C</td></tr><tr><td>labAutomation/current</td><td>humidity</td><td>number</td><td>Current relative humidity in %</td></tr><tr><td>labAutomation/current</td><td>ldr</td><td>number</td><td>Current LDR ADC reading</td></tr><tr><td>labAutomation/current</td><td>bulbState</td><td>boolean</td><td>Requested or current logical bulb state</td></tr><tr><td>labAutomation/current</td><td>mode</td><td>string</td><td>MANUAL or AUTO</td></tr><tr><td>labAutomation/current</td><td>ldrThreshold</td><td>number</td><td>Configured threshold</td></tr><tr><td>labAutomation/history/&lt;key&gt;</td><td>timestamp, temperature, humidity, ldr, bulbState, mode</td><td>mixed</td><td>One logged reading</td></tr></tbody></table></div>
+        <p class="prose" style="margin-top:16px">The dashboard reads all history records, sorts them by timestamp, shows the latest 50 in the table and draws the charts from the full set. CSV export uses the columns Timestamp, Temperature, Humidity, LDR, BulbState and Mode. The numbers for the 184 records are on the <a href="iot-task4.html#data">Task 4 page</a>.</p>
+        <div class="table-wrap narrow"><table class="cmp small"><thead><tr><th>Metric</th><th>Observed</th></tr></thead><tbody><tr><td>History records</td><td>184</td></tr><tr><td>Time range</td><td>2026-09-11 14:30:24 to 16:59:26</td></tr><tr><td>Temperature</td><td>23.7 to 25.3 &deg;C, average 24.48</td></tr><tr><td>Humidity</td><td>49 to 61 %, average 52.18</td></tr><tr><td>LDR</td><td>1749 to 4095, average 2876.7</td></tr><tr><td>Mode</td><td>152 MANUAL, 32 AUTO</td></tr><tr><td>Bulb</td><td>174 OFF, 10 ON</td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc" id="trace">
+        <h2>Requirements and status</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Requirement</th><th>Implementation or evidence</th><th>Status</th></tr></thead><tbody><tr><td>Signed-in access</td><td>Firebase Authentication script and login screenshot</td><td><span class="pass">Implemented</span></td></tr><tr><td>Live temperature, humidity, LDR</td><td>DHT11 and LDR, ESP32, Firebase current, dashboard</td><td><span class="pass">Implemented</span></td></tr><tr><td>Manual mode UI</td><td>Mode selector and Firebase mode write</td><td><span class="pass">Implemented</span></td></tr><tr><td>Manual physical relay control</td><td>Bulb switches in the Manual video. The supplied sketch does not read <code>bulbState</code></td><td><span class="pend">Video, code pending</span></td></tr><tr><td>Automatic mode UI</td><td>Mode selector and button lock-out</td><td><span class="pass">Implemented</span></td></tr><tr><td>Automatic LDR relay logic</td><td>Bulb switches in the Automatic video. The rule is not in the supplied sketch</td><td><span class="pend">Video, code pending</span></td></tr><tr><td>Configurable threshold</td><td>Dashboard validates and writes <code>ldrThreshold</code></td><td><span class="pass">Implemented</span></td></tr><tr><td>Threshold used by the ESP32</td><td>The supplied sketch has 400 and does not read Firebase</td><td><span class="pend">Not complete</span></td></tr><tr><td>History logging</td><td>ESP32 pushes records to <code>history</code></td><td><span class="pass">Implemented</span></td></tr><tr><td>Analytics</td><td>Dashboard reads history and draws charts</td><td><span class="pass">Implemented</span></td></tr><tr><td>CSV export</td><td>Dashboard JavaScript builds the CSV</td><td><span class="pass">Implemented</span></td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc" id="tests">
+        <h2>Test plan and verification</h2>
+        <p class="prose">The matrix keeps software evidence apart from physical evidence, so a web value changing is never reported as a lamp switching.</p>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>ID</th><th>Test</th><th>Expected</th><th>Evidence</th></tr></thead><tbody><tr><td>T01</td><td>Open landing page</td><td>Landing page loads</td><td>Screenshot, observed</td></tr><tr><td>T02</td><td>Sign in with a valid account</td><td>Dashboard opens</td><td>Observed</td></tr><tr><td>T03</td><td>Open the dashboard signed out</td><td>Redirect to login</td><td>Logic in the code</td></tr><tr><td>T04</td><td>Read temperature, humidity, LDR</td><td>Dashboard shows Firebase values</td><td>Observed: 23.8 &deg;C, 53 %, 2733</td></tr><tr><td>T05</td><td>Select MANUAL</td><td>Mode stored, button enabled</td><td>Observed in the UI</td></tr><tr><td>T06</td><td>Select AUTO</td><td>Mode stored, button disabled</td><td>Observed in the UI</td></tr><tr><td>T07</td><td>Save threshold</td><td>Value stored in Firebase</td><td>Observed: 2800</td></tr><tr><td>T08</td><td>History logging</td><td>New records appear</td><td>Observed: 184 records</td></tr><tr><td>T09</td><td>Analytics</td><td>Charts follow the history</td><td>Observed</td></tr><tr><td>T10</td><td>CSV export</td><td>File has the required columns</td><td>Documented in code</td></tr><tr><td>T11</td><td>Manual relay</td><td>Lamp follows <code>bulbState</code></td><td>Video: lamp switches. Code version not supplied</td></tr><tr><td>T12</td><td>Auto relay</td><td>Lamp follows LDR threshold</td><td>Video: lamp switches. Code version not supplied</td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc" id="findings">
+        <h2>Findings and the way to finish</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>ID</th><th>Finding</th><th>Detail</th></tr></thead><tbody><tr><td>F01</td><td>The dashboard writes the controls</td><td><code>bulbState</code>, <code>mode</code> and <code>ldrThreshold</code> are written to Firebase.</td></tr><tr><td>F02</td><td>Supplied firmware does not read them back</td><td>The supplied sketch never reads those three values.</td></tr><tr><td>F03</td><td>No relay logic after set-up</td><td>GPIO 26 is configured but never driven HIGH or LOW from the controls.</td></tr><tr><td>F04</td><td>Threshold mismatch</td><td>Firebase holds 2800. The firmware default is 400 and is never updated.</td></tr><tr><td>F05</td><td>Mode is local in the firmware</td><td><code>operatingMode</code> is fixed at MANUAL and logged, not synced.</td></tr><tr><td>F07</td><td>Videos show the lamp switching</td><td>The Manual and Automatic recordings show the bulb responding, so a firmware version with read-back and relay control was used. It was not supplied, and adding it would close F02 to F05.</td></tr><tr><td>F06</td><td>The UI lock-out is not enforcement</td><td>Disabling a browser button does not stop the controller or another client from acting.</td></tr></tbody></table></div>
+        <h3 class="sub">Recommended control logic</h3>
+        <p class="prose">This is a design for the missing step, not code that exists in the supplied firmware.</p>
+        <div class="code-head"><span>control_logic_plan.txt</span><button class="copy" type="button" data-copy="#code-plan">Copy code</button></div><pre class="code" id="code-plan"><code>// Recommended completion (design only, not in the supplied firmware)
+read mode, bulbState and ldrThreshold from Firebase
+
+if mode == &quot;MANUAL&quot;:
+    relay_state = bulbState
+else if mode == &quot;AUTO&quot;:
+    if ldrValue &gt; ldrThreshold:  relay_state = ON
+    else:                        relay_state = OFF
+
+write relay_state to RELAY_PIN
+publish the resulting state back to Firebase</code></pre>
+        <h3 class="sub">Before connecting the real light</h3>
+        <ol class="steps"><li>Check whether the relay module is active-HIGH or active-LOW.</li><li>Check the LDR direction with a real measurement.</li><li>Pick the threshold from measured lab lighting.</li><li>Test manual ON and OFF with a safe low-voltage load first.</li><li>Test automatic changes either side of the threshold.</li><li>Only then connect the lab light, with proper electrical safety.</li></ol>
+      </section>
+
+      <section class="doc" id="security">
+        <h2>Security and deployment</h2>
+        <ul class="tick warn"><li>Keep Wi-Fi passwords and Firebase account passwords out of public repositories.</li><li>Use Firebase Authentication instead of passwords written into browser code.</li><li>Set database security rules so signed-in users cannot write anything they like.</li><li>The Firebase web configuration in the browser is configuration, not protection. The rules are the protection.</li><li>Rotate any credential that appeared in source files or screenshots.</li><li>The firmware turns off certificate checking on its TLS connection (<code>setInsecure()</code>). That is acceptable for a demo but should be replaced with certificate validation for real use.</li><li>Do not connect an unverified relay output to a mains load while debugging.</li></ul>
+      </section>
+
+      <section class="doc" id="ops">
+        <h2>Operating procedure</h2>
+        <div class="two-col">
+          <div><h3 class="sub" style="margin-top:6px">Start-up</h3><ol class="steps"><li>Power the ESP32 and sensors.</li><li>Check that it joins the Wi-Fi.</li><li>Check that the time sync works.</li><li>Check that Firebase starts.</li><li>Open the web app.</li><li>Sign in with an authorised account.</li><li>Check that live values appear.</li></ol></div>
+          <div><h3 class="sub" style="margin-top:6px">Manual operation</h3><ol class="steps"><li>Select MANUAL.</li><li>Check the dashboard shows MANUAL.</li><li>Press the light button to request ON or OFF.</li><li>Check <code>bulbState</code> changes in Firebase.</li><li>For a full test, check that the relay and lamp follow.</li></ol></div>
+        </div>
+        <h3 class="sub">Automatic operation</h3>
+        <ol class="steps"><li>Set a suitable threshold and save it.</li><li>Select AUTO.</li><li>Check the manual button is disabled.</li><li>Change the light and watch the LDR value.</li><li>Check the intended rule: above the threshold means ON, at or below means OFF.</li><li>Finish the physical check once the ESP32 reads the controls and drives the relay.</li></ol>
+      </section>
+
+      <section class="doc" id="trouble">
+        <h2>Troubleshooting</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Symptom</th><th>Area</th><th>Checks</th></tr></thead><tbody><tr><td>No live data</td><td>Firebase or ESP32</td><td>Check Wi-Fi, Firebase start-up, the database path and the browser console.</td></tr><tr><td>Temperature or humidity missing</td><td>DHT11</td><td>Check wiring, set-up and the read-failed message.</td></tr><tr><td>LDR value missing</td><td>LDR and ADC</td><td>Check GPIO 34, wiring and the analog reading.</td></tr><tr><td>Mode changes but the lamp does not respond</td><td>Firmware control path</td><td>The supplied firmware has no read-back or relay logic yet.</td></tr><tr><td>Threshold looks right in the UI but the behaviour is wrong</td><td>Threshold sync</td><td>The firmware defaults to 400 and does not read the saved value.</td></tr><tr><td>Relay seems inverted</td><td>Relay polarity</td><td>Check whether the module is active-HIGH or active-LOW and change the output logic.</td></tr><tr><td>History table is empty</td><td>Firebase history</td><td>Check the <code>history</code> path and read permissions.</td></tr><tr><td>CSV download fails</td><td>Browser JavaScript</td><td>Check console errors and the history data structure.</td></tr><tr><td>Login fails</td><td>Authentication</td><td>Check the provider set-up, credentials and Firebase Auth settings.</td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc deep" id="deep"><h2>In depth: how it really works</h2><p class="prose">This section explains how the firmware works, why it is written the way it is, what &ldquo;closing the loop&rdquo; means for the unfinished step, and a few things the data and the code tell us when read together.</p>
+<h3 class="sub">One 5-second cycle of the firmware</h3><ol class="trace"><li><b><code>app.loop()</code> runs.</b> The Firebase library does its background work: keeping the sign-in valid and handling replies. It runs on every pass of <code>loop()</code>, so <code>loop()</code> must never be blocked.</li><li><b>The ESP32 checks it is ready.</b> <code>app.ready()</code> is false until sign-in has finished. If it is false, the loop returns and tries again.</li><li><b>A timer check.</b> <code>millis() - lastSensorUpdate &gt;= 5000</code> is true once every five seconds. This is a non-blocking timer: the loop keeps spinning and only acts when the time is up. A <code>delay(5000)</code> would freeze everything, including Firebase.</li><li><b>The sensors are read.</b> The DHT11 gives temperature and humidity. <code>analogRead(34)</code> gives the LDR value as a 12-bit number from 0 to 4095.</li><li><b>A bad read is skipped.</b> The DHT11 sometimes fails and returns NaN (not a number). The code prints a message and returns instead of writing garbage into the database.</li><li><b>The current values are overwritten.</b> <code>Database.set</code> replaces the value at a fixed path, so <code>labAutomation/current</code> always holds the latest reading.</li><li><b>Every sixth cycle adds a record.</b> When 30 seconds have passed, <code>Database.push</code> adds a new child under <code>history</code> with a key that Firebase generates, so records never overwrite each other.</li></ol><h3 class="sub">Firmware ideas, explained</h3><div class="table-wrap"><table class="cmp"><thead><tr><th>Piece</th><th>What it does and why</th></tr></thead><tbody><tr><td><code>#define ENABLE_USER_AUTH</code> and <code>ENABLE_DATABASE</code></td><td>The FirebaseClient library only compiles the parts you ask for. These switches turn on user sign-in and the Realtime Database and keep the program small.</td></tr><tr><td><code>UserAuth</code>, <code>FirebaseApp</code>, <code>AsyncClient</code></td><td>The ESP32 signs in to Firebase as a normal user with an email and password, then talks to the database through an asynchronous client. Asynchronous means a request does not block the program while it waits for a reply.</td></tr><tr><td><code>number_t(temperature, 2)</code></td><td>Sends the float with two decimal places, which keeps the stored numbers tidy.</td></tr><tr><td><code>configTime(19800, 0, ...)</code></td><td>Tells the ESP32 to fetch the time from internet servers. 19800 seconds is 5.5 hours, the India offset from UTC. Without correct time, every history record would have a wrong timestamp.</td></tr><tr><td><code>getTimestamp()</code></td><td>Formats the clock as <code>YYYY-MM-DD HH:MM:SS</code>. Because it sorts alphabetically in time order, the dashboard can sort history by this text.</td></tr><tr><td><code>ssl_client.setInsecure()</code></td><td>Skips the check of the server&rsquo;s certificate. It makes set-up easy, but the ESP32 can no longer be sure it is talking to the real Firebase server. Real use needs certificate validation.</td></tr><tr><td><code>processData()</code></td><td>A callback that prints any Firebase error with its code, so failures show up in the Serial Monitor.</td></tr></tbody></table></div><h3 class="sub">What &ldquo;closing the loop&rdquo; needs</h3>
+<p class="prose">In the sketch supplied with the report, data flows one way for the sensors (ESP32 to Firebase to page) and one way for the controls (page to Firebase). The two halves never meet on the ESP32. The demo videos show the lamp switching, so a later version must have joined them. Closing the loop means the controller also reads the controls and acts on them.</p><ol class="trace"><li><b>Read the controls.</b> Either poll <code>labAutomation/current</code> every few seconds or, better, open a stream so Firebase pushes changes to the ESP32. The same listener idea the dashboard uses in the browser.</li><li><b>Decide.</b> In MANUAL, copy <code>bulbState</code> to the relay. In AUTO, compare the LDR value with <code>ldrThreshold</code> using the rule from the plan above.</li><li><b>Act.</b> Write the relay pin. Keep the polarity in one place in the code so it can be changed without hunting for it.</li><li><b>Report back.</b> Write the real relay state to Firebase so the dashboard shows what the hardware did, not just what was requested.</li></ol><p class="prose">Reporting back matters because today the bulb card shows the requested state. Once the ESP32 publishes the real state, a mismatch between request and result becomes visible.</p>
+<h3 class="sub">Things worth noticing</h3>
+<p class="prose"><b>The start-up relay level.</b> The supplied firmware sets GPIO 26 to LOW once at start-up. The relay module used in <a href="iot-task2.html">Task 2</a> is active-low, where LOW means ON. If the lab relay behaves the same way, this line would switch the light on every time the board restarts. Setting the pin to the OFF level before making it an output, and confirming the polarity, avoids that. This is an inference from Task 2, and the polarity of this relay is still to be checked.</p>
+<p class="prose"><b>Records that the supplied code cannot write.</b> The firmware stores <code>MANUAL</code> and <code>false</code> in every history record, because its two state variables never change. The export nevertheless contains 32 AUTO records and 10 ON records. So those records were written by an earlier or different version of the sketch. This is an inference from the data, and it is a good reason to keep each firmware version with its data.</p>
+<p class="prose"><b>Missing records.</b> History runs from 14:30:24 to 16:59:26, about 2 hours 29 minutes. At one record every 30 seconds that would be roughly 299 records, yet the export has 184. The table in <a href="iot-task4.html#ui">Task 4</a> shows a gap between 16:07 and 16:55. Restarts and Wi-Fi drops would explain this. A last-seen time on the dashboard would make such gaps visible.</p>
+<p class="prose"><b>Two different numbers for the same setting.</b> The dashboard saved 2800 and the firmware says 400. Neither is wrong on its own. The problem is that two places each hold a copy of the same setting and nothing keeps them equal. Having one source of truth, Firebase, and making the ESP32 read it fixes this.</p>
+<p class="prose"><b>A locked button is not a lock.</b> In AUTO the dashboard greys out the bulb button, but the database would still accept a write from any signed-in client. Real enforcement needs database rules and logic on the controller that ignores a manual value while the mode is AUTO.</p>
+<h3 class="sub">Why separate &ldquo;observed&rdquo; from &ldquo;documented&rdquo;</h3>
+<p class="prose">A web value changing proves the dashboard and database work. It does not prove a lamp switched, which is why the Manual and Automatic videos matter. The test matrix and the requirements table mark each item as observed, documented in code or not verified, so a reviewer can see exactly how far each claim goes. That habit is more valuable than a long list of passes, and it is what makes the remaining work easy to plan.</p></section>
+
+      <section class="doc" id="conclusion">
+        <h2>Conclusion</h2>
+        <p class="prose">RAC Lab Automation is a strong base for a connected lab. Sign-in, live sensor data, mode and threshold controls, history, charts and CSV export all work, and the documents agree with the database export. The main job left is on the ESP32: read the control values from Firebase and drive the relay, then test it at low voltage before any mains load is connected.</p>
+        <div class="pager"><a class="btn line" href="iot-task4.html">&larr; Task 4</a> <a class="btn line" href="protosem.html#iot">Back to IoT tasks</a></div>
+      </section>
+    </main>
+    <footer class="foot">
+      <span>&copy; <span data-year>2026</span> Jai Surya S K · ECE, Kumaraguru College of Technology</span>
+      <span>Coimbatore, Tamil Nadu</span>
+    </footer>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

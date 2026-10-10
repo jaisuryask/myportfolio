@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>IoT Task 1 · Jai Surya S K</title>
+  <meta name="description" content="IoT session Task 1: controlling an LED over HTTP with an ESP32.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="main">
+    <header class="topbar">
+      <div class="in">
+        <a class="mono-logo" href="index.html" aria-label="Jai Surya S K, home">JS</a>
+        <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+        <nav aria-label="Main">
+          <ul class="nav" id="site-nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="experience.html">Experience</a></li>
+          <li><a href="projects.html">Projects</a></li>
+          <li><a href="protosem.html" aria-current="page">ProtoSem</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main class="page">
+      <div class="crumb"><a href="protosem.html#iot">ProtoSem</a> <span>/</span> <a href="protosem.html#iot">IoT</a> <span>/</span> Task 1</div>
+      <div class="page-top"><div class="eyebrow">IoT session &middot; Task 01</div><h1 class="page-title">ESP32 Wi-Fi LED control with a <em>web server</em></h1>
+      <p class="page-lede">An ESP32 joins the local Wi-Fi, runs an HTTP server on port 80 and lets any browser on the network switch an LED on and off.</p></div>
+
+      <div class="facts-row">
+        <div><span>Microcontroller</span><b>ESP32 Dev Module</b></div>
+        <div><span>Environment</span><b>Arduino IDE</b></div>
+        <div><span>Network</span><b>Wi-Fi client, local LAN</b></div>
+        <div><span>Observed IP</span><b>10.69.182.130</b></div>
+      </div>
+
+      <nav class="toc" aria-label="On this page"><a href="#abstract">Abstract</a><a href="#parts">Components</a><a href="#circuit">Circuit</a><a href="#photos">Photos</a><a href="#setup">Setup and upload</a><a href="#code">Source code</a><a href="#output">Output</a><a href="#principle">How it works</a><a href="#results">Test results</a><a href="#discussion">Discussion</a><a href="#deep">In depth</a><a href="#conclusion">Conclusion</a></nav>
+
+      <section class="doc" id="abstract">
+        <h2>Abstract</h2>
+        <p class="prose">This project controls an LED connected to an ESP32 from an ordinary web browser. The ESP32 is programmed in the Arduino IDE, connects to a Wi-Fi network, starts an HTTP server on port 80 and serves a simple control page with ON and OFF buttons. The screenshots below document the whole workflow: selecting the board and COM5 port, compiling and uploading the sketch, getting an IP address, starting the server and opening the page from a browser.</p>
+        <div class="flow task-flow"><span>Browser</span> <i>&rarr;</i> <span>Wi-Fi router</span> <i>&rarr;</i> <span>ESP32 web server</span> <i>&rarr;</i> <span>GPIO 2</span> <i>&rarr;</i> <span>LED</span></div>
+        <h3 class="sub">Objectives</h3>
+        <ul class="tick"><li>Set up the Arduino IDE for an ESP32 development board.</li><li>Select the correct board and serial port for programming.</li><li>Connect the ESP32 to a Wi-Fi network with an SSID and password.</li><li>Configure GPIO 2 as the LED output.</li><li>Create a lightweight HTTP server on port 80.</li><li>Give the browser ON and OFF controls for the LED.</li><li>Check that the upload and the network connection work.</li><li>Check that the page is reachable at the ESP32&rsquo;s local IP address.</li></ul>
+      </section>
+
+      <section class="doc" id="parts">
+        <h2>Hardware and software</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Category</th><th>Item</th><th>Purpose</th></tr></thead><tbody><tr><td>Hardware</td><td>ESP32 Dev Module</td><td>Wi-Fi microcontroller and web server</td></tr><tr><td>Hardware</td><td>USB cable</td><td>Programming, power and serial communication</td></tr><tr><td>Hardware</td><td>Onboard or external LED on GPIO 2</td><td>The output being controlled</td></tr><tr><td>Software</td><td>Arduino IDE</td><td>Editing, compiling and uploading firmware</td></tr><tr><td>Software</td><td>ESP32 board package</td><td>Board definitions and toolchain</td></tr><tr><td>Software</td><td>Web browser</td><td>Client used to open the control page</td></tr><tr><td>Network</td><td>Wi-Fi access point or router</td><td>Provides the local network</td></tr></tbody></table></div>
+        <h3 class="sub">Program structure</h3>
+        <ul class="parts plain"><li><b>Libraries</b><span><code>WiFi.h</code> for Wi-Fi and <code>WebServer.h</code> for the HTTP server.</span></li><li><b>Credentials</b><span>The Wi-Fi name and password are stored as string constants.</span></li><li><b>GPIO</b><span><code>LED_PIN</code> is defined as GPIO 2.</span></li><li><b>Server</b><span><code>WebServer server(80)</code> creates an HTTP server on TCP port 80.</span></li><li><b>Root page</b><span><code>handleRoot()</code> builds the &ldquo;ESP32 LED Control&rdquo; page with ON and OFF buttons.</span></li><li><b>ON and OFF handlers</b><span><code>ledOn()</code> drives the LED HIGH and <code>ledOff()</code> drives it LOW. Both return the control page.</span></li><li><b>Initialization</b><span><code>setup()</code> starts Serial, sets GPIO 2 as an output, connects to Wi-Fi, prints the IP address, registers the routes and starts the server.</span></li></ul>
+      </section>
+
+      <section class="doc" id="circuit">
+        <h2>Circuit diagram</h2>
+        <div class="diagram"><svg viewBox="0 0 660 300" role="img" aria-label="Circuit diagram: ESP32 GPIO 2 through a 220 ohm resistor and an LED to GND" xmlns="http://www.w3.org/2000/svg" font-family="Plus Jakarta Sans, Segoe UI, sans-serif" font-size="13">
+  <rect x="30" y="30" width="190" height="240" rx="10" fill="#eaf0ff" stroke="#2554f0" stroke-width="2"/>
+  <text x="125" y="58" text-anchor="middle" font-weight="700" fill="#0f1733" font-size="15">ESP32 DevKit</text>
+  <rect x="85" y="236" width="80" height="34" rx="4" fill="#ffffff" stroke="#55607f"/>
+  <text x="125" y="258" text-anchor="middle" fill="#55607f" font-size="12">USB</text>
+  <circle cx="60" cy="110" r="8" fill="#ffd54a" stroke="#b08900"/>
+  <text x="76" y="108" fill="#55607f" font-size="11.5">Onboard LED</text>
+  <text x="76" y="122" fill="#55607f" font-size="11.5">(wired to GPIO 2)</text>
+  <circle cx="220" cy="110" r="4" fill="#2554f0"/>
+  <text x="206" y="98" text-anchor="end" fill="#0f1733" font-weight="600">GPIO 2</text>
+  <circle cx="220" cy="190" r="4" fill="#0f1733"/>
+  <text x="206" y="178" text-anchor="end" fill="#0f1733" font-weight="600">GND</text>
+  <path d="M220 110 H300" stroke="#2554f0" stroke-width="2.5" fill="none"/>
+  <rect x="300" y="98" width="64" height="24" rx="3" fill="#ffffff" stroke="#0f1733" stroke-width="2"/>
+  <text x="332" y="115" text-anchor="middle" fill="#0f1733" font-weight="600">220 &#937;</text>
+  <path d="M364 110 H430" stroke="#2554f0" stroke-width="2.5" fill="none"/>
+  <polygon points="430,92 430,128 464,110" fill="#ffffff" stroke="#0f1733" stroke-width="2"/>
+  <path d="M468 90 V130" stroke="#0f1733" stroke-width="3"/>
+  <path d="M476 84 l10 -10 M486 92 l10 -10" stroke="#d98a00" stroke-width="2" fill="none"/>
+  <path d="M468 110 H560 V190 H220" stroke="#0f1733" stroke-width="2.5" fill="none"/>
+  <text x="447" y="150" text-anchor="middle" fill="#55607f" font-size="11.5">anode (+) to cathode (&#8722;)</text>
+  <text x="447" y="70" text-anchor="middle" fill="#0f1733" font-weight="600">LED</text>
+  <text x="332" y="148" text-anchor="middle" fill="#55607f" font-size="11.5">limits current</text>
+  <text x="400" y="212" text-anchor="middle" fill="#55607f" font-size="12">return path to GND</text>
+  <text x="330" y="290" text-anchor="middle" fill="#55607f" font-size="12">The external LED is optional. The onboard LED already follows GPIO 2.</text>
+</svg></div>
+        <p class="prose">The onboard LED is already wired to GPIO 2, so the sketch works with no extra parts. For an external LED, connect GPIO 2 to a 220 &#937; resistor, then to the LED anode, and connect the cathode to GND. At 3.3 V the current is around 6 mA, which is safe for the pin.</p>
+      </section>
+
+      <section class="doc" id="photos">
+        <h2>Hardware photos</h2>
+        <p class="prose">The ESP32 connected to the laptop by USB while the control page is open in the browser. The red LED is the board&rsquo;s power LED. The blue LED is the one on GPIO 2.</p>
+        <div class="figs pair"><figure class="shot fig"><a href="images/iot/task1/led-off.jpg" target="_blank" rel="noopener"><img src="images/iot/task1/led-off.jpg" alt="ESP32 board held in front of a laptop showing the page at the /off address, with only the red power LED lit"></a><figcaption>Browser at <code>/off</code>: only the red power LED is lit and the blue LED is off.</figcaption></figure><figure class="shot fig"><a href="images/iot/task1/led-on.jpg" target="_blank" rel="noopener"><img src="images/iot/task1/led-on.jpg" alt="ESP32 board held in front of a laptop showing the page at the /on address, with the blue LED lit"></a><figcaption>Browser at <code>/on</code>: the blue LED on GPIO 2 is lit next to the red power LED.</figcaption></figure></div>
+      </section>
+
+      <section class="doc" id="setup">
+        <h2>Setup and upload</h2>
+        <h3 class="sub">1. Select the board and port</h3>
+        <p class="prose">With the ESP32 board package installed in the Arduino IDE, the board dialog was opened and <b>ESP32 Dev Module</b> was chosen with <b>COM5</b>. The IDE status bar then showed &ldquo;ESP32 Dev Module on COM5&rdquo;, so both the board and the upload port were set.</p>
+        <div class="figs"><figure class="shot fig"><a href="images/iot/task1/fig1-board-port.png" target="_blank" rel="noopener"><img src="images/iot/task1/fig1-board-port.png" alt="Arduino IDE board and port dialog with ESP32 Dev Module and COM5 selected"></a><figcaption><b>Figure 1.</b> ESP32 Dev Module and COM5 selected in the Arduino IDE.</figcaption></figure></div>
+        <h3 class="sub">2. Compile and upload</h3>
+        <p class="prose">The upload finished successfully. The output console shows the firmware written to flash up to 100%, followed by &ldquo;Hash of data verified.&rdquo; and &ldquo;Hard resetting via RTS pin...&rdquo;. That means the image was verified and the ESP32 restarted after programming. The Wi-Fi name and password in the editor are hidden in this screenshot.</p>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task1/fig2-upload.png" target="_blank" rel="noopener"><img src="images/iot/task1/fig2-upload.png" alt="Arduino IDE output showing the upload reaching 100 percent and the hash verified"></a><figcaption><b>Figure 2.</b> Firmware upload and verification output. Wi-Fi details hidden.</figcaption></figure></div>
+      </section>
+
+      <section class="doc" id="code">
+        <h2>Source code</h2>
+        <div class="code-head"><span>esp32_wifi_led.ino</span><button class="copy" type="button" data-copy="#code1">Copy code</button></div>
+        <pre class="code" id="code1"><code>#include &lt;WiFi.h&gt;
+#include &lt;WebServer.h&gt;
+
+const char* ssid = &quot;YOUR_WIFI_NAME&quot;;
+const char* password = &quot;YOUR_WIFI_PASSWORD&quot;;
+
+#define LED_PIN 2
+
+WebServer server(80);
+
+void handleRoot() {
+  String page = &quot;&lt;html&gt;&lt;body&gt;&quot;;
+  page += &quot;&lt;h1&gt;ESP32 LED Control&lt;/h1&gt;&quot;;
+  page += &quot;&lt;p&gt;&lt;a href=&#x27;/on&#x27;&gt;&lt;button&gt;ON&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;&quot;;
+  page += &quot;&lt;p&gt;&lt;a href=&#x27;/off&#x27;&gt;&lt;button&gt;OFF&lt;/button&gt;&lt;/a&gt;&lt;/p&gt;&quot;;
+  page += &quot;&lt;/body&gt;&lt;/html&gt;&quot;;
+
+  server.send(200, &quot;text/html&quot;, page);
+}
+
+void ledOn() {
+  digitalWrite(LED_PIN, HIGH);
+  handleRoot();
+}
+
+void ledOff() {
+  digitalWrite(LED_PIN, LOW);
+  handleRoot();
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(&quot;.&quot;);
+  }
+
+  Serial.println(&quot;&quot;);
+  Serial.println(&quot;WiFi Connected!&quot;);
+  Serial.print(&quot;IP Address: &quot;);
+  Serial.println(WiFi.localIP());
+
+  server.on(&quot;/&quot;, handleRoot);
+  server.on(&quot;/on&quot;, ledOn);
+  server.on(&quot;/off&quot;, ledOff);
+  server.begin();
+  Serial.println(&quot;HTTP Server Started&quot;);
+}
+
+void loop() {
+  server.handleClient();
+}
+</code></pre>
+        <p class="prose small">The Wi-Fi name and password are placeholders. Put your own in your copy of the sketch and do not publish them.</p>
+      </section>
+
+      <section class="doc" id="output">
+        <h2>Output</h2>
+        <h3 class="sub">Wi-Fi and server start</h3>
+        <p class="prose">After the reboot, the Serial Monitor prints the boot messages, then &ldquo;WiFi Connected!&rdquo;, the IP address and &ldquo;HTTP Server Started&rdquo;. The firmware ran, the ESP32 joined the network and the server is listening.</p>
+        <div class="figs"><figure class="shot fig"><a href="images/iot/task1/fig3-serial.png" target="_blank" rel="noopener"><img src="images/iot/task1/fig3-serial.png" alt="Serial Monitor showing WiFi Connected, IP Address 10.69.182.130 and HTTP Server Started"></a><figcaption><b>Figure 3.</b> Serial Monitor showing the Wi-Fi connection and assigned IP address.</figcaption></figure></div>
+        <h3 class="sub">Opening the control page</h3>
+        <p class="prose">The browser was pointed at the ESP32&rsquo;s address, 10.69.182.130. The control page shows the heading &ldquo;ESP32 LED Control&rdquo; with ON and OFF buttons. Pressing them requests <code>/on</code> and <code>/off</code>, and the page comes back each time.</p>
+        <div class="figs three"><figure class="shot fig"><a href="images/iot/task1/fig4-ip-entry.png" target="_blank" rel="noopener"><img src="images/iot/task1/fig4-ip-entry.png" alt="Browser address bar with 10.69.182.130 typed"></a><figcaption><b>Figure 4.</b> Entering the ESP32&rsquo;s IP address in the browser.</figcaption></figure><figure class="shot fig"><a href="images/iot/task1/fig5-on.png" target="_blank" rel="noopener"><img src="images/iot/task1/fig5-on.png" alt="ESP32 LED Control page at 10.69.182.130/on"></a><figcaption><b>Figure 5.</b> The ESP32 LED Control page after a request to the /on endpoint.</figcaption></figure><figure class="shot fig"><a href="images/iot/task1/fig6-off.png" target="_blank" rel="noopener"><img src="images/iot/task1/fig6-off.png" alt="ESP32 LED Control page at 10.69.182.130/off"></a><figcaption><b>Figure 6.</b> The same page after a request to the /off endpoint.</figcaption></figure></div>
+      </section>
+
+      <section class="doc" id="principle">
+        <h2>How it works</h2>
+        <ol class="steps"><li>ESP32 powers up and runs <code>setup()</code>.</li><li>Serial communication starts for debugging and status messages.</li><li>GPIO 2 is configured as an output for the LED.</li><li>The ESP32 connects to the configured Wi-Fi network.</li><li>It receives a local IP address (10.69.182.130 in the captured test).</li><li>The HTTP server starts and listens on port 80.</li><li>A browser sends a request to the ESP32.</li><li>The root route returns the HTML page with ON and OFF controls.</li><li>A request to <code>/on</code> drives GPIO 2 HIGH.</li><li>A request to <code>/off</code> drives GPIO 2 LOW.</li><li>The control page is returned again after each action.</li></ol>
+      </section>
+
+      <section class="doc" id="results">
+        <h2>Functional test results</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Test</th><th>Expected result</th><th>Observed evidence</th><th>Status</th></tr></thead><tbody><tr><td>Board selection</td><td>ESP32 Dev Module and the correct COM port</td><td>IDE shows ESP32 Dev Module on COM5</td><td><span class="pass">PASS</span></td></tr><tr><td>Compile and upload</td><td>Firmware compiled and uploaded</td><td>Write reached 100% and verification succeeded</td><td><span class="pass">PASS</span></td></tr><tr><td>Wi-Fi connection</td><td>ESP32 joins the configured Wi-Fi</td><td>Serial Monitor: WiFi Connected!</td><td><span class="pass">PASS</span></td></tr><tr><td>IP acquisition</td><td>ESP32 receives a LAN address</td><td>10.69.182.130 displayed</td><td><span class="pass">PASS</span></td></tr><tr><td>HTTP server</td><td>Server starts on port 80</td><td>HTTP Server Started displayed</td><td><span class="pass">PASS</span></td></tr><tr><td>Root web page</td><td>Control page loads</td><td>ESP32 LED Control page displayed</td><td><span class="pass">PASS</span></td></tr><tr><td>ON endpoint</td><td>Browser reaches the /on route</td><td>URL changes to /on and the page is returned</td><td><span class="pass">PASS</span></td></tr><tr><td>OFF endpoint</td><td>Browser reaches the /off route</td><td>URL changes to /off and the page is returned</td><td><span class="pass">PASS</span></td></tr><tr><td>LED response</td><td>The LED follows the buttons</td><td>Photos: blue LED lit at /on, off at /off</td><td><span class="pass">PASS</span></td></tr></tbody></table></div>
+        <h3 class="sub">Evidence summary</h3>
+        <div class="table-wrap narrow"><table class="cmp small"><thead><tr><th>Stage</th><th>Evidence</th><th>Figure</th></tr></thead><tbody>
+          <tr><td>Board setup</td><td>ESP32 Dev Module and COM5 selected</td><td>1</td></tr>
+          <tr><td>Upload</td><td>Firmware written to flash and verified</td><td>2</td></tr>
+          <tr><td>Network</td><td>WiFi Connected, IP 10.69.182.130</td><td>3</td></tr>
+          <tr><td>Web UI</td><td>Address entered in the browser; ESP32 LED Control page shown</td><td>4, 5, 6</td></tr>
+          <tr><td>ON action</td><td>/on endpoint reached</td><td>5</td></tr>
+          <tr><td>OFF action</td><td>/off endpoint reached</td><td>6</td></tr>
+          <tr><td>LED state</td><td>Blue LED lit at /on, off at /off</td><td>Hardware photos</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section class="doc" id="discussion">
+        <h2>Results and discussion</h2>
+        <p class="prose">The experiment shows a complete IoT control path. The ESP32 is both the controller and the HTTP server, and the browser is the client. No cloud platform is involved, because everything runs over the local Wi-Fi. The address is a private one, so the page can be reached only from devices on the same network.</p>
+        <p class="prose">The screenshots prove firmware upload, Wi-Fi connection, server start and access to the <code>/on</code> and <code>/off</code> endpoints. The hardware photos show the result on the board itself: the blue LED lights after <code>/on</code> and goes out after <code>/off</code>.</p>
+        <div class="two-col">
+          <div><h3 class="sub">Advantages</h3><ul class="tick"><li>Simple and low cost.</li><li>Uses the ESP32&rsquo;s built-in Wi-Fi.</li><li>Works from a normal web browser.</li><li>No mobile app needed.</li><li>Low overhead on a local network.</li><li>Easy to extend to relays, motors and sensors.</li></ul></div>
+          <div><h3 class="sub">Limitations and safety</h3><ul class="tick warn"><li>The page is basic HTML with no authentication.</li><li>HTTP is not encrypted, so keep it off untrusted networks.</li><li>Wi-Fi details are written in the source code. Fine for a lab demo, not for a product.</li><li>The LED state was confirmed by eye in the photos, not measured with a meter.</li><li>GPIO 2 should only drive suitable loads. Larger loads need a driver circuit.</li><li>The IP address can change after reconnecting unless it is reserved.</li></ul></div>
+        </div>
+        <h3 class="sub">Possible improvements</h3>
+        <ul class="parts"><li><b>Better interface</b><span>Add CSS and responsive buttons, and show the current LED state on the page.</span></li><li><b>Clean redirects</b><span>Redirect to the root page after <code>/on</code> and <code>/off</code>.</span></li><li><b>Reliable Wi-Fi</b><span>Add a connection timeout and automatic reconnect.</span></li><li><b>Access control</b><span>Add authentication or local access control outside the lab.</span></li><li><b>Safer credentials</b><span>Use a configuration step instead of hard-coding them.</span></li><li><b>More outputs</b><span>Add controls for relays, motors or several LEDs.</span></li><li><b>Sensor feedback</b><span>Show live measurements on the page.</span></li><li><b>Easy address</b><span>Use mDNS so the device has a hostname instead of an IP.</span></li></ul>
+        <h3 class="sub">Applications</h3>
+        <ul class="chips"><li>Home and lab IoT demonstrations</li><li>Remote appliance switching with relays</li><li>LED and lighting control</li><li>Motor and actuator prototypes</li><li>Embedded systems lab experiments</li><li>Industrial monitoring and control prototypes</li><li>Web-based sensor dashboards</li></ul>
+      </section>
+
+      <section class="doc deep" id="deep"><h2>In depth: how it really works</h2><p class="prose">This section explains the project from the ground up: what happens on the network when you press a button, what every part of the sketch does, and why the design has the limits it has.</p>
+<h3 class="sub">What happens when you press ON</h3><ol class="trace"><li><b>The browser builds a request.</b> Clicking the ON button follows the link <code>/on</code>. The browser opens a TCP connection to the ESP32&rsquo;s IP address on port 80 and sends <code>GET /on HTTP/1.1</code>.</li><li><b>The ESP32 receives it.</b> Its network stack passes the bytes to the <code>WebServer</code> library. Nothing happens yet, because the library only works when <code>server.handleClient()</code> is called from <code>loop()</code>.</li><li><b>The route is matched.</b> <code>handleClient()</code> reads the request line, finds the path <code>/on</code> in the table built by <code>server.on(...)</code> and calls the function registered for it, <code>ledOn()</code>.</li><li><b>The pin changes.</b> <code>digitalWrite(LED_PIN, HIGH)</code> drives GPIO 2 to about 3.3 V. Current flows through the LED to ground and the LED lights.</li><li><b>A response goes back.</b> <code>handleRoot()</code> builds the HTML page and <code>server.send(200, &quot;text/html&quot;, page)</code> returns it with status 200 (OK). The browser draws the same page again, now at the address ending in <code>/on</code>.</li><li><b>The connection closes.</b> The server keeps no memory of the request. The LED state lives only in the voltage on the pin.</li></ol><h3 class="sub">The sketch, piece by piece</h3><div class="table-wrap"><table class="cmp"><thead><tr><th>Code</th><th>What it does and why</th></tr></thead><tbody><tr><td><code>#include &lt;WiFi.h&gt;</code></td><td>Brings in the ESP32 Wi-Fi functions: connecting to a router, reading the status and getting the IP address.</td></tr><tr><td><code>#include &lt;WebServer.h&gt;</code></td><td>A small HTTP server for the ESP32. It parses requests and sends responses so the sketch does not have to handle raw sockets.</td></tr><tr><td><code>const char* ssid / password</code></td><td>The network name and password, stored as text. Placeholders are shown on this page. Real values stay out of anything you publish.</td></tr><tr><td><code>#define LED_PIN 2</code></td><td>Names the pin. GPIO 2 drives the onboard LED on many ESP32 boards, which is why no extra parts are needed.</td></tr><tr><td><code>WebServer server(80)</code></td><td>Creates the server object on port 80, the default port for HTTP. With port 80 the address needs no <code>:port</code> suffix.</td></tr><tr><td><code>handleRoot()</code></td><td>Builds a short HTML page with two buttons inside links to <code>/on</code> and <code>/off</code>, then sends it. The page is assembled as a text string, so the whole interface lives inside the firmware.</td></tr><tr><td><code>ledOn() / ledOff()</code></td><td>Set the pin HIGH or LOW, then call <code>handleRoot()</code> so the browser always receives a page back. Without a response the browser would wait and report an error.</td></tr><tr><td><code>Serial.begin(115200)</code></td><td>Opens the USB serial link. The Serial Monitor must use the same 115200 baud rate or the text looks like random characters.</td></tr><tr><td><code>pinMode(LED_PIN, OUTPUT)</code></td><td>Makes GPIO 2 an output, so the chip drives the pin instead of reading it.</td></tr><tr><td><code>digitalWrite(LED_PIN, LOW)</code></td><td>Starts with the LED off, so the board has a known state at power-up.</td></tr><tr><td><code>WiFi.begin(ssid, password)</code></td><td>Starts joining the router in station mode, which means the ESP32 acts like a phone or laptop on the network.</td></tr><tr><td><code>while (WiFi.status() != WL_CONNECTED)</code></td><td>Waits, printing a dot every 500 ms, until the router has accepted the connection and assigned an address. The dots in the Serial Monitor are this loop running.</td></tr><tr><td><code>WiFi.localIP()</code></td><td>The address the router&rsquo;s DHCP server gave the ESP32. This is the address typed into the browser.</td></tr><tr><td><code>server.on(&quot;/&quot;, ...) , &quot;/on&quot; , &quot;/off&quot;</code></td><td>Builds the route table: which function answers which path. A path that is not listed returns nothing useful.</td></tr><tr><td><code>server.begin()</code></td><td>Starts listening for connections. Until this line runs, the ESP32 is on the network but not serving anything.</td></tr><tr><td><code>server.handleClient()</code></td><td>Called over and over from <code>loop()</code>. It is the heartbeat of the program: each call checks for a waiting request and handles it. Long <code>delay()</code> calls in <code>loop()</code> would make the page slow to respond.</td></tr></tbody></table></div><h3 class="sub">Ideas behind the project</h3>
+<p class="prose"><b>Client and server.</b> The browser is the client and the ESP32 is the server. The client always starts the conversation. The ESP32 can never say &ldquo;the state changed&rdquo; on its own. This is called the request and response model.</p>
+<p class="prose"><b>Local network only.</b> The address is a private one handed out by the router, so only devices on the same Wi-Fi can reach it. Reaching it from outside would need port forwarding or a tunnel, which also exposes the board to the internet. Tasks 2 and 3 solve this differently.</p>
+<p class="prose"><b>DHCP and a changing address.</b> The router chooses the ESP32&rsquo;s address and may give it a different one later. That is why the sketch prints the address at every start. A DHCP reservation on the router, or a fixed IP in the sketch, would keep it stable.</p>
+<p class="prose"><b>Why the resistor.</b> A red LED drops about 2 V, so with a 3.3 V pin and a 220 &Omega; resistor the current is roughly (3.3 &minus; 2.0) / 220 &asymp; 6 mA. That lights the LED clearly and stays well within what a GPIO pin should supply. Without the resistor the current is limited only by the LED and the pin, which can damage either.</p>
+<p class="prose"><b>Safe to repeat.</b> Opening <code>/on</code> twice has the same result as opening it once. Commands with this property are called idempotent, and they make remote control forgiving when a request is retried or the page is refreshed.</p>
+<h3 class="sub">Limits of this approach</h3>
+<ul class="tick warn"><li>The browser must ask each time, so the page does not update if the LED is changed elsewhere.</li><li>There is no sign-in. Anyone on the same network who knows the address can switch the LED.</li><li>Traffic is plain HTTP, so it is not encrypted.</li><li>The interface is a string inside the firmware, so changing the look means re-uploading the sketch.</li></ul>
+<p class="prose">These limits are the reason the next task moves to MQTT, where the device keeps a connection open and the cloud pushes commands to it.</p></section>
+
+      <section class="doc" id="conclusion">
+        <h2>Conclusion</h2>
+        <p class="prose">The ESP32 Wi-Fi LED control experiment was implemented and verified. The evidence shows the right board and port, a successful upload and verification, Wi-Fi connection, an IP address, the HTTP server starting, and the browser reaching the ON and OFF endpoints. It is the basic design of a local-network IoT device and a good base for the next tasks.</p>
+        <div class="pager"><a class="btn line" href="protosem.html#iot">&larr; Back to IoT tasks</a> <a class="btn line" href="iot-task2.html">Next: Task 2 &rarr;</a></div>
+      </section>
+    </main>
+    <footer class="foot">
+      <span>&copy; <span data-year>2026</span> Jai Surya S K · ECE, Kumaraguru College of Technology</span>
+      <span>Coimbatore, Tamil Nadu</span>
+    </footer>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ProtoSem · Jai Surya S K</title>
+  <meta name="description" content="ProtoSem session notes and IoT work by Jai Surya S K.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="main">
+    <header class="topbar">
+      <div class="in">
+        <a class="mono-logo" href="index.html" aria-label="Jai Surya S K, home">JS</a>
+        <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+        <nav aria-label="Main">
+          <ul class="nav" id="site-nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="experience.html">Experience</a></li>
+          <li><a href="projects.html">Projects</a></li>
+          <li><a href="protosem.html" aria-current="page">ProtoSem</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main class="page">
+      <div class="page-top"><div class="eyebrow">ProtoSem</div><h1 class="page-title">Proto<em>Sem</em></h1>
+      <p class="page-lede">Notes and work from my ProtoSem sessions.</p></div>
+      <div class="tabs" role="tablist" aria-label="ProtoSem sessions">
+        <button class="tab" role="tab" type="button" data-tab="week1" id="tab-week1" aria-controls="week1" aria-selected="true">Week 1</button>
+        <button class="tab" role="tab" type="button" data-tab="iot" id="tab-iot" aria-controls="iot" aria-selected="false">IoT</button>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="week1" aria-labelledby="tab-week1">
+        <div class="sec-head"><h2 class="sec-title">Personal <em>development</em></h2><span class="sec-tag">// Week 1</span></div>
+        <div class="mini-grid">
+          <div class="mini"><div class="tag">16 Personalities</div><h3>Protagonist (ENFJ)</h3><p>Inspiring others, empathetic leadership and helping others grow.</p></div>
+          <div class="mini"><div class="tag">Zen Pencils</div><h3>The Road Not Taken</h3><p>Read the Robert Frost adaptation. Takeaway: choose your own path and pursue your own aspirations.</p></div>
+          <div class="mini"><div class="tag">Forge alumni blogs</div><h3>Product thinking</h3><p>Right product, right customer, product thinking and prompt refinement. Build meaningful solutions.</p></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="iot" aria-labelledby="tab-iot" hidden>
+        <div class="sec-head"><h2 class="sec-title">From Prototype to <em>Production</em></h2><span class="sec-tag">// IoT session</span></div>
+        <p class="prose" style="margin-bottom:20px">A smart-home and smart-lab build on an ESP32 in five tasks. It starts with a web page on the local network, moves to MQTT and voice control, and ends with a Firebase dashboard for the RAC lab with sensors, history and manual and automatic modes.</p>
+        <ul class="iot-stack"><li>ESP32</li><li>HTTP</li><li>MQTT</li><li>Adafruit IO</li><li>IFTTT</li><li>Google Assistant</li><li>Firebase</li><li>DHT11</li><li>LDR</li><li>Relay module</li></ul>
+        <div class="task"><div class="n">TASK 01</div><div><h3>Control an LED over HTTP</h3><p>The ESP32 joins the local Wi-Fi and runs a small web server. A page in the browser toggles the onboard LED. HTTP works well for an occasional command, but the browser has to ask every time, so it cannot push updates on its own.</p><div class="flow"><span>Browser</span> <i>&rarr;</i> <span>HTTP request</span> <i>&rarr;</i> <span>ESP32 web server</span> <i>&rarr;</i> <span>LED</span></div><a class="btn task-btn" href="iot-task1.html">View task 1 in detail &rarr;</a></div></div><div class="task"><div class="n">TASK 02</div><div><h3>Switch a bulb from anywhere with MQTT</h3><p>Control moves to the cloud. A dashboard on Adafruit IO publishes MQTT messages and the ESP32 subscribes to them. A relay module switches the mains bulb so the 230 V side stays isolated from the microcontroller. The task also covers MQTT quality of service levels 0, 1 and 2.</p><div class="flow"><span>Dashboard</span> <i>&rarr;</i> <span>Adafruit IO</span> <i>&rarr;</i> <span>MQTT</span> <i>&rarr;</i> <span>ESP32</span> <i>&rarr;</i> <span>Relay</span> <i>&rarr;</i> <span>Bulb</span></div><a class="btn task-btn" href="iot-task2.html">View task 2 in detail &rarr;</a></div></div><div class="task"><div class="n">TASK 03</div><div><h3>Add voice control</h3><p>A spoken command goes through a chain of services before it reaches the relay. Each hop adds a little delay, so the interface shows feedback while the bulb catches up.</p><div class="flow"><span>Google Assistant</span> <i>&rarr;</i> <span>IFTTT webhook</span> <i>&rarr;</i> <span>Adafruit IO</span> <i>&rarr;</i> <span>MQTT</span> <i>&rarr;</i> <span>ESP32</span> <i>&rarr;</i> <span>Relay</span></div><a class="btn task-btn" href="iot-task3.html">View task 3 in detail &rarr;</a></div></div><div class="task"><div class="n">TASK 04</div><div><h3>Build a web dashboard</h3><p>A web app on Firebase with email and Google sign-in. It listens to the database in real time and shows temperature, humidity and light. It has Manual and Automatic modes, a saved LDR threshold, a history table and CSV export.</p><div class="flow"><span>Firebase Hosting</span> <i>&rarr;</i> <span>Authentication</span> <i>&rarr;</i> <span>Realtime database</span> <i>&rarr;</i> <span>Dashboard</span></div><a class="btn task-btn" href="iot-task4.html">View task 4 in detail &rarr;</a></div></div><div class="task"><div class="n">TASK 05</div><div><h3>IoT control of the bulb, all together</h3><p>Everything combined: a DHT11 and an LDR feed the ESP32, Firebase carries the data, and a web dashboard sets the bulb to Manual or Automatic. The page documents the pins, firmware, data model, tests and what remains. Videos show the bulb switching in Manual and Automatic mode. The sketch supplied with the report does not yet contain the read-back, so the demo version still needs documenting.</p><div class="flow"><span>DHT11 + LDR</span> <i>&rarr;</i> <span>ESP32</span> <i>&rarr;</i> <span>Firebase</span> <i>&rarr;</i> <span>Dashboard</span> <i>&rarr;</i> <span>Relay and bulb</span></div><a class="btn task-btn" href="iot-task5.html">View task 5 in detail &rarr;</a></div></div>
+        <div class="sec-head" style="margin-top:34px"><h2 class="sec-title">What went <em>wrong</em></h2><span class="sec-tag">// Debugging notes</span></div>
+        <div class="mini-grid"><div class="mini"><h3>Relay logic is reversed</h3><p>The relay board in Task 2 switches on a LOW signal, so the code writes LOW for ON and HIGH for OFF. Checking the polarity first avoids a bulb that does the opposite of the button.</p></div><div class="mini"><h3>A paid plan for web requests</h3><p>In Task 3 the IFTTT web request action needed a paid plan. The Adafruit IO action does the same job on the free plan.</p></div><div class="mini"><h3>Secrets in screenshots</h3><p>Wi-Fi passwords and an Adafruit IO key showed up in early screenshots. They were covered before publishing, and exposed keys need to be regenerated.</p></div><div class="mini"><h3>Dashboard ahead of the firmware</h3><p>In Task 5 the dashboard writes the light state, mode and threshold, but the sketch supplied with the report does not read them back. The demo version that does must be written up next.</p></div></div>
+        <div class="sec-head" style="margin-top:38px"><h2 class="sec-title">The five tasks <em>compared</em></h2></div>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Task</th><th>Approach</th><th>Reach</th><th>Style</th><th>Output</th></tr></thead><tbody><tr><td>1</td><td>HTTP</td><td>Local network only</td><td>Request and response</td><td>Onboard LED</td></tr><tr><td>2</td><td>MQTT + Adafruit IO</td><td>Anywhere</td><td>Publish and subscribe</td><td>Relay and bulb</td></tr><tr><td>3</td><td>Voice + IFTTT</td><td>Anywhere, hands-free</td><td>Chained webhooks</td><td>Relay and bulb</td></tr><tr><td>4</td><td>Firebase dashboard</td><td>Anywhere, signed in</td><td>Real-time listeners</td><td>Browser app</td></tr><tr><td>5</td><td>All together: sensors, Firebase, bulb</td><td>Anywhere, with sensors</td><td>Manual and auto modes</td><td>DHT11, LDR, Firebase, relay and bulb</td></tr></tbody></table></div>
+        <p class="src"><b>Safety:</b> the bulb runs on 230 V mains. Keep it isolated behind a relay, test the control logic at low voltage first, and never put Wi-Fi or cloud keys in code you publish.</p>
+      </div>
+    </main>
+    <footer class="foot">
+      <span>&copy; <span data-year>2026</span> Jai Surya S K · ECE, Kumaraguru College of Technology</span>
+      <span>Coimbatore, Tamil Nadu</span>
+    </footer>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

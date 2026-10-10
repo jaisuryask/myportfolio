@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>IoT Task 4 · Jai Surya S K</title>
+  <meta name="description" content="IoT session Task 4: RAC smart lab web dashboard on Firebase.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="main">
+    <header class="topbar">
+      <div class="in">
+        <a class="mono-logo" href="index.html" aria-label="Jai Surya S K, home">JS</a>
+        <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+        <nav aria-label="Main">
+          <ul class="nav" id="site-nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="experience.html">Experience</a></li>
+          <li><a href="projects.html">Projects</a></li>
+          <li><a href="protosem.html" aria-current="page">ProtoSem</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main class="page">
+      <div class="crumb"><a href="protosem.html#iot">ProtoSem</a> <span>/</span> <a href="protosem.html#iot">IoT</a> <span>/</span> Task 4</div>
+      <div class="page-top"><div class="eyebrow">IoT session &middot; Task 04</div><h1 class="page-title">A <em>web dashboard</em> for the RAC smart lab</h1>
+      <p class="page-lede">A sign-in protected web app that shows temperature, humidity and light from an ESP32, switches a lab light manually or by an LDR threshold, and keeps a history that can be exported as CSV.</p></div>
+
+      <div class="facts-row">
+        <div><span>Hosting</span><b>Firebase Hosting</b></div>
+        <div><span>Data</span><b>Realtime Database</b></div>
+        <div><span>Sign-in</span><b>Email + Google</b></div>
+        <div><span>Sensors</span><b>DHT11 + LDR</b></div>
+      </div>
+      <p style="margin:0 0 6px"><a class="btn" href="https://lab-automation-52c6b.web.app/" target="_blank" rel="noopener">Open the live web app &nearr;</a> <span class="src" style="border:0;background:none;padding:0 0 0 8px">Sign-in is required to see the dashboard.</span></p>
+
+      <nav class="toc" aria-label="On this page"><a href="#overview">Overview</a><a href="#arch">Architecture</a><a href="#features">Features</a><a href="#ui">Interface</a><a href="#db">Database</a><a href="#data">Data analysis</a><a href="#tests">Tests</a><a href="#security">Security</a><a href="#future">Next steps</a><a href="#deep">In depth</a><a href="#conclusion">Conclusion</a></nav>
+
+      <section class="doc" id="overview">
+        <h2>Overview</h2>
+        <p class="prose">Tasks 2 and 3 switched a bulb from a dashboard and by voice. Task 4 turns that into a proper application for the Robotics and Automation Club lab. An ESP32 reads a DHT11 (temperature and humidity) and an LDR (ambient light) and writes the values to Firebase. A web page reads the same values live, draws charts, lets an operator set the lab light state and records every reading so it can be reviewed later.</p>
+        <div class="flow task-flow"><span>DHT11 + LDR</span> <i>&rarr;</i> <span>ESP32</span> <i>&rarr;</i> <span>Firebase Realtime Database</span> <i>&rarr;</i> <span>Web dashboard</span> <i>&rarr;</i> <span>Operator</span></div>
+        <h3 class="sub">Objectives</h3>
+        <ul class="tick"><li>Monitor temperature, humidity and light in near real time.</li><li>Give the lab one web page for status and control.</li><li>Show and set the lab light state from the page.</li><li>Support manual mode and an automatic mode driven by an LDR threshold.</li><li>Keep a timestamped history of readings and control state.</li><li>Allow only signed-in users to reach the controls.</li><li>Export the history as CSV for offline study.</li></ul>
+      </section>
+
+      <section class="doc" id="arch">
+        <h2>Architecture and data flow</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Layer</th><th>Technology</th><th>Role</th></tr></thead><tbody><tr><td>Sensors</td><td>DHT11 and LDR</td><td>Temperature, humidity and ambient light</td></tr><tr><td>Edge controller</td><td>ESP32</td><td>Reads sensors, pushes state to the cloud, drives the relay</td></tr><tr><td>Actuator</td><td>Relay and lab light</td><td>Relay output on the ESP32 (see Task 5 for the firmware status)</td></tr><tr><td>Cloud</td><td>Firebase Authentication + Realtime Database</td><td>Sign-in, current state and history</td></tr><tr><td>User interface</td><td>Web app on Firebase Hosting</td><td>Monitoring, control, charts, history and export</td></tr></tbody></table></div>
+        <h3 class="sub">How data moves</h3>
+        <ol class="steps"><li>The DHT11 gives temperature and humidity to the ESP32.</li><li>The LDR gives an analog light value, used for display and for automatic mode.</li><li>The ESP32 updates the <code>current</code> branch and adds a record to <code>history</code>.</li><li>The web app reads these values and shows them in cards and charts.</li><li>In manual mode the operator sets the bulb state ON or OFF from the page, and it is stored in the database.</li><li>In automatic mode the intended rule is that the controller compares the LDR value with the saved threshold and decides. Task 5 explains what is and is not in the firmware yet.</li><li>The dashboard shows <b>Live</b> while the ESP32 connection is available.</li></ol>
+      </section>
+
+      <section class="doc" id="features">
+        <h2>What the app does</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Feature</th><th>Description</th></tr></thead><tbody><tr><td>Landing page</td><td>Product name, a short description and a clear login button.</td></tr><tr><td>Authentication</td><td>Email and password sign-in, Google sign-in, password recovery and a way back to the home page.</td></tr><tr><td>Dashboard</td><td>Live temperature, humidity, LDR value, light state, connection badge and the lighting controls.</td></tr><tr><td>Monitoring</td><td>Line charts for temperature and humidity, and a separate chart for ambient light.</td></tr><tr><td>Lighting control</td><td>Turn the light on or off by hand, and switch between Manual and Automatic mode.</td></tr><tr><td>LDR automation</td><td>Enter a threshold and save it. Automatic mode compares the light reading against it.</td></tr><tr><td>History</td><td>A table of timestamped records with temperature, humidity, LDR, bulb state and mode.</td></tr><tr><td>CSV export</td><td>A Download CSV button for reports and offline analysis.</td></tr></tbody></table></div>
+      </section>
+
+      <section class="doc" id="ui">
+        <h2>Interface</h2>
+        <p class="prose">The screens in the order a user meets them. The sign-in screen has its email and password hidden.</p>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task4/home.png" target="_blank" rel="noopener"><img src="images/iot/task4/home.png" alt="Lab Automation landing page: Smart Laboratory Automation with a Login to System button" loading="lazy"></a><figcaption><b>Figure 1.</b> Landing page with a login button.</figcaption></figure></div>
+        <div class="figs" style="grid-template-columns:minmax(0,380px)"><figure class="shot fig"><a href="images/iot/task4/login.png" target="_blank" rel="noopener"><img src="images/iot/task4/login.png" alt="RAC Lab Automation sign-in form with Google option" loading="lazy"></a><figcaption><b>Figure 2.</b> Sign-in with email, password or Google, plus password recovery.</figcaption></figure></div>
+        <p class="prose">After signing in, the dashboard shows the four live cards, a <b>Live</b> badge for the ESP32 connection, and three control panels: the bulb switch, the Manual or Automatic mode, and the LDR threshold.</p>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task4/dashboard.png" target="_blank" rel="noopener"><img src="images/iot/task4/dashboard.png" alt="Control dashboard showing 23.8 degrees, 53 percent humidity, LDR 2733, light off, manual mode and threshold 2800" loading="lazy"></a><figcaption><b>Figure 3.</b> Control dashboard: live readings, bulb control, operating mode and LDR threshold.</figcaption></figure></div>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task4/analytics.png" target="_blank" rel="noopener"><img src="images/iot/task4/analytics.png" alt="Line charts of temperature, humidity and LDR over time" loading="lazy"></a><figcaption><b>Figure 4.</b> Temperature and humidity trends, and the ambient light history.</figcaption></figure></div>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task4/history.png" target="_blank" rel="noopener"><img src="images/iot/task4/history.png" alt="Table of timestamped readings with temperature, humidity, LDR, bulb state and mode" loading="lazy"></a><figcaption><b>Figure 5.</b> Historical data table with a Download CSV button.</figcaption></figure></div>
+        <h3 class="sub">Live state in the screenshot</h3>
+        <div class="table-wrap narrow"><table class="cmp small"><thead><tr><th>Parameter</th><th>Value</th><th>Meaning</th></tr></thead><tbody><tr><td>Temperature</td><td>23.8 &deg;C</td><td>DHT11 reading</td></tr><tr><td>Humidity</td><td>53 %</td><td>Relative humidity</td></tr><tr><td>Ambient light (LDR)</td><td>2733</td><td>Raw 12-bit value</td></tr><tr><td>Laboratory light</td><td>OFF</td><td>Relay state</td></tr><tr><td>Mode</td><td>MANUAL</td><td>Operator controls the light</td></tr><tr><td>LDR threshold</td><td>2800</td><td>Used by automatic mode</td></tr></tbody></table></div>
+        <p class="src">The dashboard values match the database values shown in Figure 6 below.</p>
+      </section>
+
+      <section class="doc" id="db">
+        <h2>Database structure</h2>
+        <p class="prose">The data lives under one root, <code>labAutomation</code>, in two branches. <code>current</code> holds the latest state. <code>history</code> holds one record for every logged reading.</p>
+        <div class="code-head"><span>labAutomation</span></div>
+        <pre class="code"><code>labAutomation
+├── current
+│   ├── bulbState: false
+│   ├── humidity: 53
+│   ├── ldr: 2733
+│   ├── ldrThreshold: 2800
+│   ├── mode: &quot;MANUAL&quot;
+│   └── temperature: 23.8
+└── history
+    └── &lt;auto-generated key&gt;
+        └── timestamp, temperature, humidity, ldr, bulb state, mode</code></pre>
+        <div class="table-wrap" style="margin-top:20px"><table class="cmp"><thead><tr><th>Path</th><th>Example</th><th>Purpose</th></tr></thead><tbody><tr><td>labAutomation/current/temperature</td><td>23.8</td><td>Latest temperature</td></tr><tr><td>labAutomation/current/humidity</td><td>53</td><td>Latest relative humidity</td></tr><tr><td>labAutomation/current/ldr</td><td>2733</td><td>Latest light reading</td></tr><tr><td>labAutomation/current/bulbState</td><td>false</td><td>Relay or bulb state</td></tr><tr><td>labAutomation/current/mode</td><td>MANUAL</td><td>Operating mode</td></tr><tr><td>labAutomation/current/ldrThreshold</td><td>2800</td><td>Automatic mode threshold</td></tr><tr><td>labAutomation/history/&lt;key&gt;</td><td>timestamp + fields</td><td>One logged reading</td></tr></tbody></table></div>
+        <div class="figs wide"><figure class="shot fig"><a href="images/iot/task4/database.png" target="_blank" rel="noopener"><img src="images/iot/task4/database.png" alt="Firebase Realtime Database tree showing labAutomation current values" loading="lazy"></a><figcaption><b>Figure 6.</b> The same state in the Firebase Realtime Database.</figcaption></figure></div>
+      </section>
+
+      <section class="doc" id="data">
+        <h2>Historical data</h2>
+        <p class="prose">The exported database held 184 history records. They give a feel for how steady the lab environment was and how the light was used.</p>
+        <div class="table-wrap narrow"><table class="cmp small"><thead><tr><th>Metric</th><th>Minimum</th><th>Maximum</th><th>Average</th></tr></thead><tbody><tr><td>Temperature (&deg;C)</td><td>23.7</td><td>25.3</td><td>24.5</td></tr><tr><td>Humidity (%)</td><td>49.0</td><td>61.0</td><td>52.2</td></tr><tr><td>LDR</td><td>1749</td><td>4095</td><td>2876.7</td></tr></tbody></table></div>
+        <div class="split"><div class="split-h"><b>Operating mode</b><span>184 records</span></div><div class="split-bar" role="img" aria-label="Manual 152, Auto 32"><i style="width:82.6%">Manual 152</i><i class="b" style="width:17.4%">Auto 32</i></div></div><div class="split"><div class="split-h"><b>Light state</b><span>184 records</span></div><div class="split-bar" role="img" aria-label="ON 10, OFF 174"><i style="width:5.4%">ON 10</i><i class="b" style="width:94.6%">OFF 174</i></div></div>
+        <p class="prose">Temperature stayed within about 1.6 &deg;C and humidity within 12 points, so the room was stable. The LDR moved across almost its whole range, from 1749 up to the 12-bit maximum of 4095. The light was on in only 10 of 184 records, and 152 records were logged in manual mode against 32 in automatic mode.</p>
+      </section>
+
+      <section class="doc" id="tests">
+        <h2>Functional tests</h2>
+        <div class="table-wrap"><table class="cmp"><thead><tr><th>Test</th><th>Procedure</th><th>Result</th><th>Status</th></tr></thead><tbody><tr><td>Login page</td><td>Open the app and reach sign-in</td><td>Email, password and Google options shown</td><td><span class="pass">PASS</span></td></tr><tr><td>Dashboard loading</td><td>Sign in and open the dashboard</td><td>Live cards and controls shown</td><td><span class="pass">PASS</span></td></tr><tr><td>Sensor monitoring</td><td>Watch temperature, humidity and LDR</td><td>Values shown and in step with Firebase</td><td><span class="pass">PASS</span></td></tr><tr><td>Manual light control</td><td>Use Turn ON and Turn OFF</td><td>Bulb state changes on the page and in the database</td><td><span class="pass">PASS</span></td></tr><tr><td>Mode selection</td><td>Switch Manual and Automatic</td><td>Mode shown on the page and in history</td><td><span class="pass">PASS</span></td></tr><tr><td>Threshold setting</td><td>Enter a value and save</td><td>Threshold shown as 2800</td><td><span class="pass">PASS</span></td></tr><tr><td>History</td><td>Open the history view</td><td>Timestamped records with sensor and control fields</td><td><span class="pass">PASS</span></td></tr><tr><td>Analytics</td><td>Open the monitoring charts</td><td>Temperature, humidity and LDR trends drawn</td><td><span class="pass">PASS</span></td></tr><tr><td>CSV export</td><td>Select Download CSV</td><td>Button present; file not opened</td><td><span class="pass">SEEN</span></td></tr></tbody></table></div>
+        <p class="src">Manual light control and mode selection are marked as passed from the supplied evidence. The CSV button was seen in the interface, but the downloaded file was not opened.</p>
+      </section>
+
+      <section class="doc" id="security">
+        <h2>Security and deployment</h2>
+        <ul class="tick warn"><li>Keep passwords, private keys, service-account credentials and OAuth secrets out of source code and public repositories.</li><li>Use Firebase Authentication to gate the dashboard.</li><li>Set Realtime Database security rules so that signed-out users cannot read or change control and sensor data. A web page being signed-in only is not enough if the database itself is open.</li><li>Prefer per-user or role-based access when several operators will use the lab system.</li><li>Check the threshold value in both the web app and on the ESP32 so a bad number cannot cause unsafe behaviour.</li><li>Log important commands and configuration changes so there is an audit trail.</li><li>Keep database URLs and account identifiers out of shared screenshots.</li></ul>
+      </section>
+
+      <section class="doc" id="future">
+        <h2>Next steps</h2>
+        <ul class="tick"><li>Roles such as administrator, staff and student operator.</li><li>Alert limits and notifications for abnormal readings, sensor faults and lost ESP32 connection.</li><li>Fail-safe OFF behaviour for the actuator after the connection is lost.</li><li>Device health: Wi-Fi status, uptime, signal strength and a last-seen time.</li><li>Charts with a selectable time range and summary cards.</li><li>Calibration controls for the LDR and the environment sensors.</li><li>A maintenance log for lab equipment.</li></ul>
+      </section>
+
+      <section class="doc deep" id="deep"><h2>In depth: how it really works</h2><p class="prose">This section explains the ideas behind the app: which cloud service does what, how the page stays live, how the data is organised and how automatic mode makes its decision. The report shows the app and its data, not its source code, so the explanations describe how these features normally work and tie each one to what the screenshots show.</p>
+<h3 class="sub">What happens from sensor to screen</h3><ol class="trace"><li><b>The ESP32 samples the sensors.</b> The DHT11 gives temperature and humidity. The LDR is read on an analog pin, which on the ESP32 gives a 12-bit number from 0 to 4095. The history reached exactly 4095, the top of that range.</li><li><b>It writes to Firebase.</b> The ESP32 updates the fields under <code>labAutomation/current</code> so the newest reading is always in one place, and adds a record under <code>history</code> with a timestamp.</li><li><b>The database tells the page.</b> The web app does not keep asking for data. It registers a listener on <code>current</code>, and Firebase sends the new values the moment they change. This is why the cards and the <b>Live</b> badge update without a refresh.</li><li><b>The operator acts.</b> Pressing <b>Turn ON</b> writes a new bulb state to the database. To switch the real light, the ESP32 has to read that value and drive the relay. The firmware supplied with the report does not do this yet, which <a href="iot-task5.html">Task 5</a> documents in detail.</li><li><b>The page shows the stored state.</b> The bulb card changes after the database changes, so what you see is the stored state, not just the button that was pressed. It shows what was requested, and a physical check is needed to confirm the lamp followed.</li></ol><h3 class="sub">Cloud terms: IaaS, PaaS, SaaS and BaaS</h3><div class="table-wrap"><table class="cmp"><thead><tr><th>Model</th><th>What you manage</th></tr></thead><tbody><tr><td><b>IaaS</b></td><td>Infrastructure as a service. You rent raw machines, storage and networks and set up everything on top. Maximum control, maximum work.</td></tr><tr><td><b>PaaS</b></td><td>Platform as a service. You supply the code and the provider runs the servers and scaling.</td></tr><tr><td><b>SaaS</b></td><td>Software as a service. You use a finished application in the browser, with nothing to build.</td></tr><tr><td><b>BaaS</b></td><td>Backend as a service. You get ready-made backend pieces, such as sign-in, a database and hosting, and write only the front end. Firebase is this kind of service, and it is the reason this lab app needs no server of its own.</td></tr></tbody></table></div><h3 class="sub">Authentication and authorization</h3>
+<p class="prose"><b>Authentication</b> answers &ldquo;who are you?&rdquo; The login page does this with email and password or a Google account. <b>Authorization</b> answers &ldquo;what may you do?&rdquo; This is decided by database rules and, later, by roles. The two are separate: someone can be signed in properly and still be forbidden from changing the light. In this prototype the page requires sign-in, and the report advises tightening the database rules so that access is enforced by Firebase itself and not only by the web page.</p>
+<h3 class="sub">Why the data has two branches</h3>
+<p class="prose"><code>current</code> is a small, fixed set of fields that is overwritten every time. The dashboard can read it quickly and the ESP32 can update it cheaply. <code>history</code> only grows: each reading becomes a new child with a key that Firebase generates. Keeping a log apart from the latest state means the dashboard never has to search the log to find the current value, and the log is never overwritten, so it can be used as an audit trail and exported.</p>
+<p class="prose">In the screenshot of the table, new rows appear roughly every 30 seconds, with a gap between 16:07 and 16:55 on the same day. That kind of gap is worth explaining in a real deployment, for example a powered-off board or a lost connection.</p>
+<h3 class="sub">Manual and automatic mode</h3>
+<p class="prose">In <b>manual</b> mode the operator owns the light, and the threshold is ignored. In <b>automatic</b> mode the intended design is that the ESP32 compares the LDR value with the saved threshold and sets the relay. The mode is stored in the database, so the dashboard and the history record who is in charge at any moment. The controller can only follow it once the firmware reads the value back.</p>
+<p class="prose"><b>Which direction counts as dark?</b> That depends on how the LDR is wired in its voltage divider, so a higher number can mean either more or less light. In the three AUTO rows visible in the history table the light was OFF with readings of 2514 to 2758, below the 2800 threshold, but the threshold at that time is not known. It is worth confirming the direction on the bench and writing it on the page.</p>
+<p class="prose"><b>Flicker near the threshold.</b> The recorded LDR readings average 2877, close to the 2800 setting, and swing by hundreds from sample to sample. With a single hard threshold a reading hovering around 2800 would flip the light on and off repeatedly. A small dead band (switch on below one value, off above a slightly different one) or an average of several readings avoids that.</p>
+<h3 class="sub">CSV export</h3>
+<p class="prose">CSV is a plain text table with one record per line and commas between the fields. Because it opens in any spreadsheet, it is the simplest way to take the history out of the app for charts or a lab report. The table columns, timestamp, temperature, humidity, LDR, bulb and mode, map directly to the columns in the file.</p>
+<h3 class="sub">Failure cases to design for</h3>
+<ul class="tick warn"><li><b>ESP32 offline.</b> The page can keep showing the last stored values, so a connection badge or a last-seen time is needed to avoid trusting stale data.</li><li><b>Open database rules.</b> If anyone can write to the database, anyone can switch the light. The rules, not the page, are the real lock.</li><li><b>Bad threshold.</b> A non-numeric or out-of-range value should be rejected both on the page and on the ESP32.</li><li><b>Fail-safe.</b> If the connection is lost while the light is on, the controller should have a defined behaviour, such as switching OFF.</li></ul></section>
+
+      <section class="doc" id="conclusion">
+        <h2>Conclusion</h2>
+        <p class="prose">The RAC Lab Automation app joins sensing, an ESP32 controller, a cloud database, sign-in, live charts, actuator control and a logged history in one system. The screenshots and the database export agree with each other, which shows data flowing correctly from the sensors to the page. Stronger database rules, roles, alerts and fail-safe behaviour would be the next steps to make it ready for everyday lab use.</p>
+        <div class="pager"><a class="btn line" href="iot-task3.html">&larr; Task 3</a> <a class="btn line" href="protosem.html#iot">Back to IoT tasks</a></div>
+      </section>
+    </main>
+    <footer class="foot">
+      <span>&copy; <span data-year>2026</span> Jai Surya S K · ECE, Kumaraguru College of Technology</span>
+      <span>Coimbatore, Tamil Nadu</span>
+    </footer>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
