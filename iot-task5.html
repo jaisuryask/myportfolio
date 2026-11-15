@@ -41,7 +41,7 @@
         <div><span>History records</span><b>184</b></div>
       </div>
 
-      <nav class="toc" aria-label="On this page"><a href="#status">Status</a><a href="#arch">Architecture</a><a href="#hw">Hardware</a><a href="#stack">Software</a><a href="#firmware">Firmware</a><a href="#modes">Modes</a><a href="#dash">Dashboard code</a><a href="#data">Data</a><a href="#trace">Requirements</a><a href="#tests">Tests</a><a href="#findings">Findings</a><a href="#security">Security</a><a href="#ops">Operation</a><a href="#trouble">Troubleshooting</a><a href="#deep">In depth</a><a href="#conclusion">Conclusion</a></nav>
+      <nav class="toc" aria-label="On this page"><a href="#status">Status</a><a href="#arch">Architecture</a><a href="#hw">Hardware</a><a href="#stack">Software</a><a href="#firmware">Firmware</a><a href="#modes">Modes</a><a href="#dash">Dashboard code</a><a href="#data">Data</a><a href="#trace">Requirements</a><a href="#tests">Tests</a><a href="#findings">Findings</a><a href="#security">Security</a><a href="#ops">Operation</a><a href="#trouble">Troubleshooting</a><a href="#deep">In depth</a><a href="#checklist">Calibration and logs</a><a href="#conclusion">Conclusion</a></nav>
 
       <section class="doc" id="status">
         <h2>Where the project stands</h2>
@@ -276,6 +276,38 @@ publish the resulting state back to Firebase</code></pre>
 <p class="prose"><b>A locked button is not a lock.</b> In AUTO the dashboard greys out the bulb button, but the database would still accept a write from any signed-in client. Real enforcement needs database rules and logic on the controller that ignores a manual value while the mode is AUTO.</p>
 <h3 class="sub">Why separate &ldquo;observed&rdquo; from &ldquo;documented&rdquo;</h3>
 <p class="prose">A web value changing proves the dashboard and database work. It does not prove a lamp switched, which is why the Manual and Automatic videos matter. The test matrix and the requirements table mark each item as observed, documented in code or not verified, so a reviewer can see exactly how far each claim goes. That habit is more valuable than a long list of passes, and it is what makes the remaining work easy to plan.</p></section>
+
+      <section class="doc" id="checklist">
+        <h2>Threshold calibration, log structure and control logic</h2>
+<h3 class="sub">LDR threshold and calibration method</h3><p class="prose">The threshold is the ADC value (0 to 4095 on the ESP32) at which the system decides it is dark enough to turn the light on. The method is below, and the table records the readings to enter.</p><ol class="steps"><li>Read the LDR value several times with the room at its brightest and note the average.</li><li>Cover the LDR or darken the room, read again and note the average.</li><li>Set the threshold between the two averages, close to the midpoint, so the light does not flicker when the reading hovers near the limit.</li><li>Enter the value in the dashboard threshold box (range 0 to 4095) and press Save.</li><li>Raise and lower the light level and check that the lamp switches at the expected point.</li></ol><div class="figs wide"><figure class="shot fig"><a href="images/iot/task5/threshold.png" target="_blank" rel="noopener"><img src="images/iot/task5/threshold.png" alt="Number line showing the threshold placed between a bright reading and a dark reading" loading="lazy"></a><figcaption><b>Figure 9.</b> Placing the threshold between two measured readings. The positions are illustrative.</figcaption></figure></div><div class="table-wrap"><table class="cmp"><thead><tr><th>Lighting condition</th><th>LDR readings</th><th>Average</th></tr></thead><tbody><tr><td>Bright room</td><td>to be recorded</td><td>&nbsp;</td></tr><tr><td>Dark room</td><td>to be recorded</td><td>&nbsp;</td></tr><tr><td>Threshold chosen</td><td>midpoint of the two averages</td><td>&nbsp;</td></tr></tbody></table></div><p class="prose">The dashboard stored a threshold of 2800 while the firmware default was 400. One value must be used in both places; if the firmware reads <code>ldrThreshold</code> from Firebase, the dashboard value applies automatically.</p><h3 class="sub">Database structure used for logs</h3><div class="table-wrap"><table class="cmp"><thead><tr><th>Node</th><th>Fields</th></tr></thead><tbody><tr><td>labAutomation/current</td><td>temperature, humidity, ldr, bulbState, mode, ldrThreshold (overwritten every 5 s)</td></tr><tr><td>labAutomation/history</td><td>one record every 30 s: timestamp, temperature, humidity, ldr, bulbState, mode</td></tr></tbody></table></div><p class="prose">Timestamps come from NTP with the UTC+5:30 offset. The exported data holds 184 history records; the dashboard shows the latest 50, draws charts from all of them, and the CSV export writes Timestamp, Temperature, Humidity, LDR, BulbState and Mode.</p><h3 class="sub">Control logic completing Manual and Automatic mode</h3><p class="prose">This snippet reads the mode, bulb state and threshold from Firebase and drives the relay on GPIO 26. In MANUAL the relay follows <code>bulbState</code>; in AUTO it follows the LDR comparison.</p><div class="code-head"><span>task5_control_logic_snippet.ino</span><button class="copy" type="button" data-copy="#code-t5ctl">Copy code</button></div><pre class="code" id="code-t5ctl"><code>// Task 5: control logic to add to the existing Firebase firmware (design snippet).
+// Reads mode, bulbState and ldrThreshold written by the dashboard and drives the relay.
+// Adapt the Firebase read calls to the FirebaseClient version used in the project.
+// Polarity: the project relay is on GPIO 26; confirm active-HIGH or active-LOW on your module.
+
+const bool RELAY_ACTIVE_LOW = true;       // set to false for an active-HIGH module
+
+String modeValue   = &quot;MANUAL&quot;;            // &quot;MANUAL&quot; or &quot;AUTO&quot;  (labAutomation/current/mode)
+bool   bulbState   = false;               // labAutomation/current/bulbState
+int    ldrThreshold = 2800;               // labAutomation/current/ldrThreshold
+                                          // use the SAME number as the dashboard, not 400
+
+void applyRelay(bool on) {
+  digitalWrite(RELAY_PIN, (on ^ RELAY_ACTIVE_LOW) ? HIGH : LOW);
+}
+
+void updateLight(int ldrValue) {
+  bool on;
+  if (modeValue == &quot;AUTO&quot;) {
+    // Confirm the direction with your own readings (see calibration table in the report).
+    on = (ldrValue &gt; ldrThreshold);       // swap to &#x27;&lt;&#x27; if your LDR circuit reads lower in the dark
+  } else {
+    on = bulbState;                       // MANUAL: follow the dashboard button
+  }
+  applyRelay(on);
+  // The history record then logs: on ? &quot;ON&quot; : &quot;OFF&quot;, and modeValue.
+}
+</code></pre><h3 class="sub">Repository</h3><p class="prose">Source files, the README and the written report are in the <code>iot-assignments</code> folder of the portfolio repository. The Manual and Automatic mode videos are in the Modes section above.</p>
+      </section>
 
       <section class="doc" id="conclusion">
         <h2>Conclusion</h2>

@@ -41,7 +41,7 @@
         <div><span>Relay pin</span><b>GPIO 26</b></div>
       </div>
 
-      <nav class="toc" aria-label="On this page"><a href="#overview">Overview</a><a href="#parts">Components</a><a href="#mqtt">MQTT basics</a><a href="#params">Parameters</a><a href="#adafruit">Adafruit IO setup</a><a href="#arduino">Arduino IDE</a><a href="#working">How it works</a><a href="#photos">Hardware photos</a><a href="#output">Output</a><a href="#verify">Verification</a><a href="#trouble">Troubleshooting</a><a href="#security">Security</a><a href="#deep">In depth</a><a href="#conclusion">Conclusion</a></nav>
+      <nav class="toc" aria-label="On this page"><a href="#overview">Overview</a><a href="#parts">Components</a><a href="#mqtt">MQTT basics</a><a href="#params">Parameters</a><a href="#adafruit">Adafruit IO setup</a><a href="#arduino">Arduino IDE</a><a href="#working">How it works</a><a href="#photos">Hardware photos</a><a href="#output">Output</a><a href="#verify">Verification</a><a href="#trouble">Troubleshooting</a><a href="#security">Security</a><a href="#deep">In depth</a><a href="#checklist">Source code</a><a href="#conclusion">Conclusion</a></nav>
 
       <section class="doc" id="overview">
         <h2>Overview</h2>
@@ -183,6 +183,82 @@ else if (command == &quot;OFF&quot;) {
 <p class="prose"><b>Why the relay.</b> A GPIO pin supplies a few milliamps at 3.3 V and cannot power a bulb. The relay lets that small signal switch a separate circuit. Its contacts are electrically isolated from the ESP32, which keeps the mains side away from the microcontroller. Mains wiring should be done only with proper supervision and a rated, enclosed setup.</p>
 <h3 class="sub">What can go wrong</h3>
 <ul class="tick warn"><li>A wrong username or key stops the connection, and the Serial Monitor shows a connect error instead of <code>MQTT Connected!</code>.</li><li>A wrong feed name connects but never receives a message.</li><li>If Wi-Fi drops, the sketch has to reconnect to Wi-Fi first and then to the broker.</li><li>A relay wired backwards makes the bulb light when the dashboard says OFF. Check the logic before blaming the cloud.</li></ul></section>
+
+      <section class="doc" id="checklist">
+        <h2>Complete source code and explanation</h2>
+<p class="prose">The complete sketch is below. It subscribes the ESP32 to the Adafruit IO feed <code>kumaraguru_rac/feeds/Bulb</code> and switches the relay on GPIO 26 when the dashboard toggle sends ON or OFF. The relay module is active-LOW, so LOW energises it. The Wi-Fi password and Adafruit IO key are placeholders.</p><div class="code-head"><span>task2_mqtt_bulb.ino</span><button class="copy" type="button" data-copy="#code-t2">Copy code</button></div><pre class="code" id="code-t2"><code>// Task 2: ESP32 bulb control through Adafruit IO (MQTT)
+// Dashboard toggle -&gt; feed &quot;Bulb&quot; -&gt; MQTT broker -&gt; ESP32 -&gt; relay on GPIO 26
+// Replace the placeholders below. Never commit real credentials.
+
+#include &lt;WiFi.h&gt;
+#include &quot;Adafruit_MQTT.h&quot;
+#include &quot;Adafruit_MQTT_Client.h&quot;
+
+#define WIFI_SSID     &quot;YOUR_WIFI_NAME&quot;
+#define WIFI_PASSWORD &quot;YOUR_WIFI_PASSWORD&quot;
+
+#define AIO_SERVER    &quot;io.adafruit.com&quot;
+#define AIO_PORT      1883
+#define AIO_USERNAME  &quot;kumaraguru_rac&quot;
+#define AIO_KEY       &quot;YOUR_ADAFRUIT_IO_KEY&quot;
+
+#define RELAY_PIN     26      // relay input, active-LOW module
+
+WiFiClient client;
+Adafruit_MQTT_Client mqtt(&amp;client, AIO_SERVER, AIO_PORT, AIO_USERNAME, AIO_KEY);
+Adafruit_MQTT_Subscribe bulbFeed(&amp;mqtt, AIO_USERNAME &quot;/feeds/Bulb&quot;);
+
+void connectWiFi() {
+  Serial.print(&quot;Connecting to Wi-Fi&quot;);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print(&quot;.&quot;); }
+  Serial.println(&quot;\nWiFi connected, IP: &quot; + WiFi.localIP().toString());
+}
+
+void connectMQTT() {
+  if (mqtt.connected()) return;
+  Serial.print(&quot;Connecting to Adafruit IO MQTT... &quot;);
+  int8_t ret;
+  while ((ret = mqtt.connect()) != 0) {
+    Serial.println(mqtt.connectErrorString(ret));
+    mqtt.disconnect();
+    delay(5000);
+  }
+  Serial.println(&quot;MQTT connected&quot;);
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, HIGH);          // HIGH = relay off on an active-LOW module
+  connectWiFi();
+  mqtt.subscribe(&amp;bulbFeed);              // listen to the Bulb feed
+}
+
+void loop() {
+  connectMQTT();                          // reconnect if the session dropped
+
+  Adafruit_MQTT_Subscribe *sub;
+  while ((sub = mqtt.readSubscription(1000))) {
+    if (sub == &amp;bulbFeed) {
+      String command = (char *)bulbFeed.lastread;
+      Serial.print(&quot;Received MQTT command: &quot;);
+      Serial.println(command);
+
+      if (command == &quot;ON&quot;) {
+        digitalWrite(RELAY_PIN, LOW);     // active-LOW: LOW energises the relay
+        Serial.println(&quot;Bulb ON&quot;);
+      } else if (command == &quot;OFF&quot;) {
+        digitalWrite(RELAY_PIN, HIGH);
+        Serial.println(&quot;Bulb OFF&quot;);
+      }
+    }
+  }
+
+  if (!mqtt.ping()) mqtt.disconnect();    // keep-alive
+}
+</code></pre><h3 class="sub">What the important sections do</h3><div class="table-wrap"><table class="cmp"><thead><tr><th>Section</th><th>What it does</th></tr></thead><tbody><tr><td>Includes</td><td>WiFi.h for the Wi-Fi connection; Adafruit_MQTT.h and Adafruit_MQTT_Client.h for the MQTT client and feed objects.</td></tr><tr><td>Credentials</td><td>Wi-Fi name and password, Adafruit IO username and key, broker io.adafruit.com and port 1883.</td></tr><tr><td>mqtt and bulbFeed</td><td>mqtt is the MQTT client on the ESP32. bulbFeed is the subscription to the topic kumaraguru_rac/feeds/Bulb.</td></tr><tr><td>setup()</td><td>Starts serial output, sets GPIO 26 as output with the relay off, joins Wi-Fi and subscribes to the feed.</td></tr><tr><td>connectMQTT()</td><td>Opens the MQTT session and retries every 5 seconds if it fails.</td></tr><tr><td>loop()</td><td>Waits up to one second for a message. When the feed delivers ON or OFF the relay is switched and the command is printed to the Serial Monitor.</td></tr><tr><td>mqtt.ping()</td><td>Keep-alive so the broker does not close the session.</td></tr></tbody></table></div><h3 class="sub">Demonstration</h3><p class="prose">The ON and OFF photographs, the dashboard screenshots and the Serial Monitor output above show the toggle switching the bulb. The same sketch is in the repository under <code>iot-assignments/task2_mqtt</code>.</p>
+      </section>
 
       <section class="doc" id="conclusion">
         <h2>Conclusion</h2>
